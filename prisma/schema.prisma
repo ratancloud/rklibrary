@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ROLE {
+  ADMIN
+  USER
+}
+
+enum Status {
+  ACTIVE
+  EXPIRED
+}
+
+enum ShiftType {
+  MORNING
+  AFTERNOON
+  EVENING
+  NIGHT
+}
+
+model User {
+  id            String  @id
+  name          String
+  email         String
+  emailVerified Boolean @default(false)
+  image         String?
+  role          ROLE    @default(USER)
+
+  banned     Boolean?  @default(false)
+  banReason  String?
+  banExpires DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  sessions  Session[]
+  accounts  Account[]
+  libraries Library[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Library {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  name          String
+  email         String?
+  contactNumber String
+
+  // Config
+  address    String
+  district   String
+  state      String
+  pincode    String
+  facilities String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User relation
+  user User @relation(fields: [userId], references: [id])
+
+  // Relations
+  floors        Floor[]
+  shifts        Shift[]
+  students      Student[]
+  subscriptions Subscription[]
+
+  @@unique([userId, contactNumber])
+  @@index([userId])
+}
+
+model Floor {
+  id        String @id @default(cuid())
+  libraryId String
+
+  name       String
+  totalSeats Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  seats   Seat[]
+
+  @@unique([libraryId, name])
+  @@index([libraryId])
+}
+
+model Seat {
+  id      String @id @default(cuid())
+  floorId String
+
+  seatNo   Int
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  floor         Floor          @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  assignments SeatAssignment[]
+
+  @@unique([floorId, seatNo])
+  @@index([floorId])
+}
+
+model Shift {
+  id        String @id @default(cuid())
+  libraryId String
+
+  name      ShiftType
+  startTime Int
+  endTime   Int
+  price     Float
+  isActive  Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  library     Library             @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  assignments SeatAssignment[]
+
+  @@unique([libraryId, name])
+  @@index([libraryId])
+}
+
+model Student {
+  id        String @id @default(cuid())
+  libraryId String
+  memberId     Int @default(autoincrement())
+  name         String
+  gender       String
+  phoneNumber  String
+  address      String?
+  lockerNumber Int?    @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  library       Library        @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+  assignments   SeatAssignment[]
+
+  @@unique([libraryId, phoneNumber])
+  @@index([libraryId])
+}
+
+model Subscription {
+  id        String @id @default(cuid())
+  libraryId String
+  studentId String?
+
+  floorName  String
+  seatNo      Int
+  shiftName  ShiftType[]
+
+  studentName String
+  studentGender String
+  studentPhone String
+  studentAddress String?
+
+  startDate   DateTime
+  endDate     DateTime
+  totalAmount Int
+  discount    Int    @default(0)
+  amountPaid  Int    @default(0)
+  status      Status   @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  library            Library             @relation(fields: [libraryId], references: [id])
+  student            Student?             @relation(fields: [studentId], references: [id], onDelete: SetNull)
+
+  @@index([libraryId, status])
+  @@index([startDate, endDate])
+  @@index([studentId])
+}
+
+model SeatAssignment {
+  id        String @id @default(cuid())
+  seatId    String
+  shiftId   String
+  studentId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  seat      Seat    @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  shift     Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([seatId, shiftId]) 
+  @@index([studentId])
+}
+
+model Inquiry {
+  id          String        @id @default(cuid())
+  name        String
+  gender      String
+  phoneNumber String
+  address     String?
+  shiftNames  ShiftType[]
+  joiningDate DateTime?
+  message     String?       @db.Text
+  status      InquiryStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+}
+
+enum InquiryStatus {
+  PENDING
+  CONTACTED
+  CONVERTED
+  CANCELLED
+}
