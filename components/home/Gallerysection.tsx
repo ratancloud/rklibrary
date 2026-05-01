@@ -24,7 +24,7 @@ const galleryImages: GalleryImage[] = [
   {
     src: "/RKLibrary/building.jpeg",
     title: "",
-    subtitle: "Personal storage for every member",
+    subtitle: "Exterior view of RK Library",
     span: "tall",
   },
   {

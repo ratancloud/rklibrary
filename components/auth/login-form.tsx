@@ -79,14 +79,15 @@ export default function LoginForm() {
         <div className="flex justify-center">
           <Link
             href="/"
-            className="flex items-center py-0.5 gap-2.5 font-bold tracking-tight transition-transform hover:scale-102"
+            className="flex items-center font-bold tracking-tight transition-transform hover:scale-102"
           >
             <Image
-              src="/RKLibrary/rkLibraryLogo.png"
+              src="/RKLibrary/rkLibraryLogo2.avif"
               alt="RKLibrary Logo"
-              width={150}
+              width={70}
               height={20}
-              className="rounded-full"
+              className="rounded-full h-auto w-auto"
+              loading="eager"
             />
           </Link>
         </div>

@@ -167,7 +167,7 @@ export default function AboutClient() {
                       Address
                     </h4>
                     <p className="text-gray-600 text-sm leading-relaxed">
-                      Harihar Nagar Mohaddiganj, Opposite Near Om Palace, Sasaram
+                      Near OM palace, Harihar nagar, Mohaddiganj, Sasaram
                     </p>
                   </div>
                 </div>

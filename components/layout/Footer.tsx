@@ -16,6 +16,7 @@ import {
   InstagramIcon,
   YoutubeIcon,
 } from "@/components/icons/SocialIcons";
+import Image from "next/image";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -71,17 +72,16 @@ const Footer = () => {
           <div className="col-span-2 md:col-span-1 flex flex-col gap-5">
             <Link
               href="/"
-              className="flex items-center py-0.5 gap-2.5 font-bold tracking-tight transition-transform hover:scale-102"
+              className="flex items-center transition-transform hover:scale-102"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary font-serif text-2xl font-bold text-white shadow-md md:h-12 md:w-12 md:text-3xl">
-                  rk
-                </div>
-
-                <span className="font-sans text-2xl font-light tracking-tight text-white md:text-3xl">
-                  Library
-                </span>
-              </div>
+              <Image
+                src="/RKLibrary/rkLibraryLogo2.avif"
+                alt="RKLibrary Logo"
+                width={70}
+                height={60}
+                className="h-auto w-auto"
+                loading="eager"
+              />
             </Link>
 
             <p className="text-sm text-gray-500 leading-relaxed">

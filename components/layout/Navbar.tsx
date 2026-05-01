@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -98,17 +99,15 @@ export default function Navbar() {
         {/* --- LEFT: LOGO --- */}
         <Link
           href="/"
-          className="flex items-center py-0.5 gap-2.5 font-bold tracking-tight transition-transform hover:scale-102"
+          className="flex items-center transition-transform hover:scale-102"
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary font-serif text-2xl font-bold text-white shadow-md md:h-12 md:w-12 md:text-3xl">
-              rk
-            </div>
-
-            <span className="font-sans text-2xl font-light tracking-tight text-slate-900 md:text-3xl">
-              Library
-            </span>
-          </div>
+          <Image
+            src="/RKLibrary/rkLibraryLogo.png"
+            alt="RKLibrary Logo"
+            width={180}
+            height={60}
+            loading="eager"
+          />
         </Link>
 
         {/* --- MIDDLE: DESKTOP NAVIGATION --- */}
@@ -155,17 +154,16 @@ export default function Navbar() {
                   <SheetTitle className="flex items-center gap-3 text-xl font-bold text-gray-950">
                     <Link
                       href="/"
-                      className="flex items-center font-bold tracking-tight transition-transform hover:scale-102"
+                      className="flex items-center transition-transform hover:scale-102"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary font-serif text-2xl font-bold text-white shadow-md md:h-12 md:w-12 md:text-3xl">
-                          rk
-                        </div>
-
-                        <span className="font-sans text-2xl font-light tracking-tight text-slate-900 md:text-3xl">
-                          Library
-                        </span>
-                      </div>
+                      <Image
+                        src="/RKLibrary/rkLibraryLogo.png"
+                        alt="RKLibrary Logo"
+                        width={80}
+                        height={60}
+                        className="h-auto w-auto"
+                        loading="eager"
+                      />
                     </Link>
                   </SheetTitle>
                   <SheetDescription className="sr-only">

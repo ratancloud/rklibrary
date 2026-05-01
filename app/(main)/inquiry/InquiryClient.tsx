@@ -547,7 +547,7 @@ export default function InquiryClient() {
                 <h4 className="font-semibold text-gray-950 self-center">Address</h4>
               </div>
               <p className="text-gray-600 text-sm leading-relaxed">
-                Harihar Nagar Mohaddiganj, Opposite Near Om Palace, Sasaram
+                Near OM palace, Harihar nagar, Mohaddiganj, Sasaram
               </p>
             </div>
 

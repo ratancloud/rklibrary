@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Loader2, Mail, Lock, User, Eye, EyeOff } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { authClient } from "@/lib/auth-client"
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Loader2, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -16,10 +16,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import Link from "next/link"
-import { toast } from "sonner"
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { toast } from "sonner";
 import {
   Form,
   FormControl,
@@ -27,48 +27,50 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import Image from "next/image"
+} from "@/components/ui/form";
+import Image from "next/image";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.email({ message: "Please enter a valid email address." }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-})
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters." }),
+});
 
 export default function SignUpForm() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = React.useState(false)
-  const [isLoading, setIsLoading] = React.useState(false)
+  const router = useRouter();
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { name: "", email: "", password: "" },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const { data, error } = await authClient.signUp.email({
         name: values.name,
         email: values.email,
         password: values.password,
-      })
+      });
 
       if (error || !data?.user) {
-        toast.error(error?.message || "Something went wrong.")
-        return
+        toast.error(error?.message || "Something went wrong.");
+        return;
       }
 
-      toast.success("Account created successfully!")
-      form.reset()
-      router.push("/setup")
-      router.refresh()
+      toast.success("Account created successfully!");
+      form.reset();
+      router.push("/setup");
+      router.refresh();
     } catch (error) {
-      console.error(error)
-      toast.error("An unexpected error occurred.")
+      console.error(error);
+      toast.error("An unexpected error occurred.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -78,11 +80,18 @@ export default function SignUpForm() {
       <CardHeader className="space-y-6 text-center pt-10 pb-4">
         <div className="flex justify-center">
           <Link
-          href="/"
-          className="flex items-center py-0.5 gap-2.5 font-bold tracking-tight transition-transform hover:scale-102"
-        >
-          <Image src="/RKLibrary/Logo.png" alt="RKLibrary Logo" width={150} height={20} className="rounded-full" />
-        </Link>
+            href="/"
+            className="flex items-center font-bold tracking-tight transition-transform hover:scale-102"
+          >
+            <Image
+              src="/RKLibrary/rkLibraryLogo2.avif"
+              alt="RKLibrary Logo"
+              className="rounded-full h-auto w-auto"
+              width={70}
+              height={20}
+              loading="eager"
+            />
+          </Link>
         </div>
 
         <div className="space-y-1.5">
@@ -105,7 +114,9 @@ export default function SignUpForm() {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold text-gray-700">Full Name</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-gray-700">
+                    Full Name
+                  </FormLabel>
                   <FormControl>
                     <div className="relative group">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 transition-colors group-focus-within:text-primary" />
@@ -128,7 +139,9 @@ export default function SignUpForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold text-gray-700">Email Address</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-gray-700">
+                    Email Address
+                  </FormLabel>
                   <FormControl>
                     <div className="relative group">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 transition-colors group-focus-within:text-primary" />
@@ -151,7 +164,9 @@ export default function SignUpForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold text-gray-700">Password</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-gray-700">
+                    Password
+                  </FormLabel>
                   <FormControl>
                     <div className="relative group">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 transition-colors group-focus-within:text-primary" />
@@ -166,7 +181,9 @@ export default function SignUpForm() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
                       >
                         {showPassword ? (
                           <EyeOff className="size-4" />
@@ -213,5 +230,5 @@ export default function SignUpForm() {
         </p>
       </CardFooter>
     </Card>
-  )
+  );
 }
