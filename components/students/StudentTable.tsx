@@ -115,7 +115,7 @@ const generateWhatsAppReceipt = ({
   const alert = buildAlert(dues, daysLeft);
 
   const lines: string[] = [
-    `MAA LIBRARY`,
+    `RK LIBRARY`,
     `Official Subscription Receipt`,
     DIVIDER,
     `Name           : ${studentName}`,
@@ -133,9 +133,9 @@ const generateWhatsAppReceipt = ({
     `Outstanding    : Rs. ${dues}`,
     DIVIDER,
     ...(alert ? [alert, DIVIDER] : []),
-    `Thank you for choosing Maa Library.`,
+    `Thank you for choosing RK Library.`,
     ``,
-    `Authorized By  : Yogendra Kumar (Owner)`,
+    `Authorized By  : Rajan Prakash (Owner)`,
   ];
 
   return lines.join("\n");

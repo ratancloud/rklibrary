@@ -381,7 +381,7 @@ export default function HistoryClient() {
         .map((r) => r.split(",").map((c) => c.replace(/^"|"$/g, "")));
       const doc = new jsPDF("landscape");
       doc.setFontSize(16);
-      doc.text(`Maa Library Subscriptions - ${monthLabel}`, 14, 15);
+      doc.text(`RK Library Subscriptions - ${monthLabel}`, 14, 15);
       autoTable(doc, {
         head: [rows[0]],
         body: rows.slice(1),

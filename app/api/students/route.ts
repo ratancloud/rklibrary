@@ -40,6 +40,7 @@ export async function GET() {
             shiftName: true,
             totalAmount: true,
             amountPaid: true,
+            discount: true,
             status: true,
             startDate: true,
             endDate: true,
