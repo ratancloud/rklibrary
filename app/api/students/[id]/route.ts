@@ -69,7 +69,23 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { name, gender, phoneNumber, address, lockerNumber } = body;
+    const {
+      name,
+      gender,
+      phoneNumber,
+      fatherName,
+      fatherPhone,
+      aadhaarNumber,
+      address,
+      temporaryAddress,
+      lockerNumber,
+      profileImageUrl,
+      profileImageId,
+      aadhaarFrontUrl,
+      aadhaarFrontId,
+      aadhaarBackUrl,
+      aadhaarBackId,
+    } = body;
 
     // Manual check for lockerNumber unique constraint within the same library
     if (lockerNumber) {
@@ -98,11 +114,23 @@ export async function PATCH(
         library: { userId: session.user.id },
       },
       data: {
-        name,
-        gender,
-        phoneNumber,
-        address,
-        lockerNumber: lockerNumber ? Number(lockerNumber) : null,
+        ...(name && { name }),
+        ...(gender && { gender }),
+        ...(phoneNumber && { phoneNumber }),
+        ...(fatherName && { fatherName }),
+        ...(fatherPhone && { fatherPhone }),
+        ...(aadhaarNumber !== undefined && { aadhaarNumber }),
+        ...(address !== undefined && { address }),
+        ...(temporaryAddress !== undefined && { temporaryAddress }),
+        ...(lockerNumber !== undefined && {
+          lockerNumber: lockerNumber ? Number(lockerNumber) : null,
+        }),
+        ...(profileImageUrl && { profileImageUrl }),
+        ...(profileImageId && { profileImageId }),
+        ...(aadhaarFrontUrl && { aadhaarFrontUrl }),
+        ...(aadhaarFrontId && { aadhaarFrontId }),
+        ...(aadhaarBackUrl && { aadhaarBackUrl }),
+        ...(aadhaarBackId && { aadhaarBackId }),
       },
     });
 
@@ -111,10 +139,28 @@ export async function PATCH(
       message: "Student updated",
       data: updatedStudent,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Update Student Error:", error);
+    const err = error as { code?: string; meta?: { target?: string[] }; message?: string };
+    if (err.code === "P2002") {
+      const field = err.meta?.target?.[0];
+      let errorMsg = "A record with this information already exists";
+      
+      if (field === "phoneNumber") {
+        errorMsg = "This phone number is already registered";
+      } else if (field === "lockerNumber") {
+        errorMsg = "This locker number is already assigned to another student";
+      } else if (field === "fatherPhone") {
+        errorMsg = "This father's phone number is already registered";
+      }
+      
+      return NextResponse.json(
+        { success: false, message: errorMsg },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
-      { success: false, message: "Failed to update student" },
+      { success: false, message: err.message || "Failed to update student" },
       { status: 500 },
     );
   }

@@ -75,9 +75,25 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, gender, phoneNumber, address, lockerNumber } = body;
+    const {
+      name,
+      gender,
+      phoneNumber,
+      fatherName,
+      fatherPhone,
+      aadhaarNumber,
+      address,
+      temporaryAddress,
+      lockerNumber,
+      profileImageUrl,
+      profileImageId,
+      aadhaarFrontUrl,
+      aadhaarFrontId,
+      aadhaarBackUrl,
+      aadhaarBackId,
+    } = body;
     
-    if (!name || !gender || !phoneNumber) {
+    if (!name || !gender || !phoneNumber || !fatherName || !fatherPhone) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
@@ -89,24 +105,47 @@ export async function POST(req: Request) {
         name,
         gender,
         phoneNumber,
+        fatherName,
+        fatherPhone,
+        aadhaarNumber,
         address,
+        temporaryAddress,
         lockerNumber: lockerNumber ? parseInt(lockerNumber) : null,
+        profileImageUrl,
+        profileImageId,
+        aadhaarFrontUrl,
+        aadhaarFrontId,
+        aadhaarBackUrl,
+        aadhaarBackId,
         libraryId,
       },
     });
 
     return NextResponse.json({ success: true, data: student }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Create Student Error:", error);
-    if (error.code === "P2002") {
+    const err = error as { code?: string; meta?: { target?: string[] }; message?: string };
+    if (err.code === "P2002") {
+      const field = err.meta?.target?.[0];
+      console.log(field);
+      
+      let errorMsg = "A record with this information already exists";
+      
+      if (field === "phoneNumber") {
+        errorMsg = "This phone number is already registered";
+      } else if (field === "lockerNumber") {
+        errorMsg = "This locker number is already assigned to another student";
+      } else if (field === "fatherPhone") {
+        errorMsg = "This father's phone number is already registered";
+      }
+      
       return NextResponse.json(
-        { error: "Phone number or Locker number already exists" },
+        { error: errorMsg },
         { status: 400 },
       );
     }
-    console.error("Create Student Error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: err.message || "Internal Server Error" },
       { status: 500 },
     );
   }

@@ -40,12 +40,12 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import EditStudentDialog from "./EditStudentDialog";
 import AddStudentDialog from "./AddStudentDialog";
 import { formatMemberId } from "@/lib/helper";
 import { useRouter } from "next/navigation";
 import { sendWhatsAppMessage } from "@/lib/sendMsg";
 import { WhatsappIcon } from "../icons/SocialIcons";
+import Image from "next/image";
 
 interface ReceiptData {
   studentName: string;
@@ -157,9 +157,14 @@ interface Student {
   memberId: string | null;
   name: string;
   gender: string;
+  adhaarNumber: string | null;
   phoneNumber: string;
-  lockerNumber: number | null;
+  fatherName: string;
+  fatherPhone: string;
+  temporaryAddress: string | null;
   address: string | null;
+  lockerNumber: number | null;
+  profileImageUrl: string | null;
   subscriptions: Subscription[];
 }
 
@@ -174,8 +179,6 @@ export default function StudentTable() {
 
   // Action States
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -301,19 +304,11 @@ export default function StudentTable() {
     }
   };
 
-  const getInitials = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .substring(0, 2)
-      .toUpperCase();
-
   return (
     <div className="flex flex-col h-full bg-card">
       {/* Stats Section */}
-      <div className="p-6 border-b border-border bg-linear-to-r from-muted/30 to-transparent">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="p-4 md:p-6 border-b border-border bg-linear-to-r from-muted/30 to-transparent">
+        <div className="grid grid-cols-2 gap-2 md:gap-4">
           <StatCard
             icon={TrendingUp}
             label="Total Students"
@@ -342,28 +337,30 @@ export default function StudentTable() {
       </div>
 
       {/* Search & Filters */}
-      <div className="p-6 border-b border-border space-y-4 bg-muted/10">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="relative flex-1 max-w-sm group w-full">
+      <div className="p-3 md:p-6 border-b border-border space-y-3 md:space-y-4 bg-muted/10">
+        <div className="flex flex-col gap-3 md:gap-4">
+          <div className="relative flex-1 group w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <input
-              placeholder="Search by name, ID, phone, or locker..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-11 w-full bg-background border border-border rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all"
+              className="pl-10 h-10 md:h-11 w-full text-sm bg-background border border-border rounded-lg md:rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all"
             />
           </div>
           <Button
-            onClick={() => setShowAddDialog(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl w-full sm:w-auto"
+            onClick={() => router.push("/student/create")}
+            size="sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg md:rounded-xl w-full md:w-auto"
           >
-            <Plus className="size-4 mr-2" />
-            Add Student
+            <Plus className="size-4 mr-1 md:mr-2" />
+            <span className="hidden md:inline">Add Student</span>
+            <span className="md:hidden">Add</span>
           </Button>
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none']">
+        <div className="flex gap-1.5 md:gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none']">
           {[
             { id: "all", label: "All", icon: null },
             { id: "active", label: "Active", icon: CheckCircle2 },
@@ -372,16 +369,16 @@ export default function StudentTable() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setStatusFilter(tab.id as any)}
+              onClick={() => setStatusFilter(tab.id as "all" | "active" | "expired" | "none")}
               className={cn(
-                "px-4 py-2 rounded-lg whitespace-nowrap transition-all border font-medium flex items-center gap-2",
+                "px-2.5 md:px-4 py-1.5 md:py-2 text-sm rounded-lg whitespace-nowrap transition-all border font-medium flex items-center gap-1 md:gap-2",
                 statusFilter === tab.id
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              {tab.icon && <tab.icon className="size-4" />}
-              {tab.label}
+              {tab.icon && <tab.icon className="hidden md:inline size-4" />}
+              <span className="text-xs md:text-sm">{tab.label}</span>
             </button>
           ))}
         </div>
@@ -412,28 +409,28 @@ export default function StudentTable() {
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="font-bold text-muted-foreground h-12 pl-6 w-16">
+                <TableHead className="font-bold text-muted-foreground h-10 md:h-12 pl-3 md:pl-6 w-8 md:w-16 text-xs md:text-sm">
                   #
                 </TableHead>
-                <TableHead className="font-bold text-muted-foreground h-12">
+                <TableHead className="hidden lg:table-cell font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
                   Member ID
                 </TableHead>
-                <TableHead className="font-bold text-muted-foreground h-12">
+                <TableHead className="font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
                   Student
                 </TableHead>
-                <TableHead className="font-bold text-muted-foreground h-12">
+                <TableHead className="hidden md:table-cell font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
                   Contact
                 </TableHead>
-                <TableHead className="font-bold text-muted-foreground h-12">
+                <TableHead className="hidden xl:table-cell font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
                   Locker
                 </TableHead>
-                <TableHead className="font-bold text-muted-foreground h-12">
+                <TableHead className="hidden lg:table-cell font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
                   Subscription
                 </TableHead>
-                <TableHead className="font-bold text-muted-foreground h-12 w-24 text-center">
+                <TableHead className="hidden md:table-cell font-bold text-muted-foreground h-10 md:h-12 w-16 md:w-24 text-center text-xs md:text-sm">
                   Dues
                 </TableHead>
-                <TableHead className="font-bold text-muted-foreground h-12 text-right pr-6">
+                <TableHead className="font-bold text-muted-foreground h-10 md:h-12 text-right pr-2 md:pr-6 text-xs md:text-sm">
                   Actions
                 </TableHead>
               </TableRow>
@@ -446,16 +443,16 @@ export default function StudentTable() {
                     key={student.id}
                     className="border-border hover:bg-muted/50 transition-colors group"
                   >
-                    <TableCell className="pl-6 font-medium text-muted-foreground text-xs">
+                    <TableCell className="pl-3 md:pl-6 font-medium text-muted-foreground text-xs">
                       {idx + 1}
                     </TableCell>
 
-                    {/* Clickable Member ID */}
-                    <TableCell>
+                    {/* Clickable Member ID - Hidden on Mobile */}
+                    <TableCell className="hidden lg:table-cell">
                       {student.memberId ? (
                         <Link
                           href={`/student/${student.id}`}
-                          className="font-mono text-sm font-bold text-primary hover:underline"
+                          className="font-mono text-xs md:text-sm font-bold text-primary hover:underline"
                         >
                           {formatMemberId(Number(student.memberId))}
                         </Link>
@@ -466,39 +463,46 @@ export default function StudentTable() {
                       )}
                     </TableCell>
 
-                    <TableCell className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shadow-sm">
-                          {getInitials(student.name)}
-                        </div>
-                        <div>
-                          <p className="font-bold text-foreground capitalize">
+                    <TableCell className="py-2 md:py-3 pr-1 md:pr-2">
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <Image 
+                          src={student.profileImageUrl || "/default-avatar.png"}
+                          alt={student.name}
+                          width={40} 
+                          height={40}
+                          className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border border-border shrink-0" 
+                        />
+                        <div className="min-w-0">
+                          <p className="font-bold text-foreground capitalize text-xs md:text-sm truncate">
                             {student.name}
                           </p>
-                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                          <p className="text-[8px] md:text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                             {student.gender}
+                          </p>
+                          <p className="text-[8px] md:hidden text-muted-foreground font-medium">
+                            {student.phoneNumber}
                           </p>
                         </div>
                       </div>
                     </TableCell>
 
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-foreground">
-                        <Phone size={14} className="text-muted-foreground" />
-                        <span className="font-medium text-sm">
+                    <TableCell className="hidden md:table-cell pl-1 md:pl-2">
+                      <div className="flex items-center gap-1 md:gap-2 text-foreground">
+                        <Phone size={12} className="text-muted-foreground hidden md:block" />
+                        <span className="font-medium text-xs md:text-sm">
                           {student.phoneNumber}
                         </span>
                       </div>
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell className="hidden xl:table-cell">
                       {student.lockerNumber ? (
-                        <div className="flex items-center gap-1.5 text-foreground bg-muted w-max px-2.5 py-1 rounded-md border border-border">
+                        <div className="flex items-center gap-1 text-foreground bg-muted w-max px-2 md:px-2.5 py-0.5 md:py-1 rounded-md border border-border">
                           <KeyRound
-                            size={12}
+                            size={10}
                             className="text-muted-foreground"
                           />
-                          <span className="font-mono text-sm font-bold">
+                          <span className="font-mono text-xs md:text-sm font-bold">
                             {student.lockerNumber}
                           </span>
                         </div>
@@ -507,10 +511,10 @@ export default function StudentTable() {
                       )}
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <Badge
                         className={cn(
-                          "px-2.5 py-1 rounded-full font-bold border shadow-none",
+                          "px-2 md:px-2.5 py-0.5 md:py-1 rounded-full font-bold border shadow-none text-xs md:text-sm",
                           subStatus.color,
                         )}
                       >
@@ -518,19 +522,19 @@ export default function StudentTable() {
                       </Badge>
                     </TableCell>
 
-                    <TableCell className="text-center">
+                    <TableCell className="hidden md:table-cell text-center text-xs md:text-sm">
                       {student.subscriptions[0]
                         ? `Rs. ${(student.subscriptions[0].totalAmount - (student.subscriptions[0].discount || 0)) - student.subscriptions[0].amountPaid}`
                         : "-"}
                     </TableCell>
 
-                    <TableCell className="pr-6 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <TableCell className="pr-2 md:pr-6 text-right">
+                      <div className="flex items-center justify-end gap-0.5 md:gap-1">
                         {/* WhatsApp Message Button */}
                         <Button
                           type="button"
                           title="Send WhatsApp Message"
-                          className="p-2 rounded-lg transition-colors bg-background border shadow-sm hover:border-transparent text-emerald-500 hover:bg-emerald-500/10 border-emerald-500/20"
+                          className="p-1.5 md:p-2 rounded-lg transition-colors bg-background border shadow-sm hover:border-transparent text-emerald-500 hover:bg-emerald-500/10 border-emerald-500/20"
                           onClick={() => {
                             const latestSub = student.subscriptions[0];
                             if (latestSub) {
@@ -561,7 +565,7 @@ export default function StudentTable() {
                             }
                           }}
                         >
-                          <WhatsappIcon />
+                          <WhatsappIcon className="size-3.5 md:size-4" />
                         </Button>
 
                         {/* Renew Subscription Button */}
@@ -580,10 +584,7 @@ export default function StudentTable() {
                         <ActionBtn
                           icon={Edit2}
                           color="text-blue-500 hover:bg-blue-500/10"
-                          onClick={() => {
-                            setSelectedStudent(student);
-                            setShowEditDialog(true);
-                          }}
+                          onClick={() => router.push(`/student/edit/${student.id}`)}
                           title="Edit Student"
                         />
 
@@ -606,16 +607,6 @@ export default function StudentTable() {
           </Table>
         )}
       </div>
-
-      {/* Edit Dialog */}
-      {selectedStudent && (
-        <EditStudentDialog
-          open={showEditDialog}
-          onOpenChange={setShowEditDialog}
-          student={selectedStudent}
-          onSuccess={fetchStudents}
-        />
-      )}
 
       {/* Add Student Dialog */}
       <AddStudentDialog
@@ -677,11 +668,11 @@ function ActionBtn({ icon: Icon, color, onClick, title }: ActionBtnProps) {
       onClick={onClick}
       title={title}
       className={cn(
-        "p-2 rounded-lg transition-colors bg-background border border-border shadow-sm hover:border-transparent",
+        "p-1.5 md:p-2 rounded-lg transition-colors bg-background border border-border shadow-sm hover:border-transparent",
         color,
       )}
     >
-      <Icon size={16} />
+      <Icon size={14} className="md:size-4" />
     </button>
   );
 }

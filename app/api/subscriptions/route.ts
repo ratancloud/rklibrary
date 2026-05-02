@@ -113,6 +113,8 @@ export async function POST(request: NextRequest) {
           gender: newStudent.gender || 'MALE',
           address: newStudent.address,
           libraryId: library.id,
+          fatherName: newStudent.fatherName,
+          fatherPhone: newStudent.fatherPhone,
         },
       });
       finalStudentId = created.id;

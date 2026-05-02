@@ -138,7 +138,7 @@ export default function BookingClient() {
     duration: 1,
     selectedStudent: null as StudentResult | null,
     isNewStudent: false,
-    newStudent: { name: "", phoneNumber: "", gender: "MALE", address: "" },
+    newStudent: { name: "", phoneNumber: "", gender: "MALE", address: "", fatherName: "", fatherPhone: "" },
     amountPaid: 0,
     discount: 0,
   });
@@ -242,9 +242,9 @@ export default function BookingClient() {
     }
     if (
       bookingData.isNewStudent &&
-      (!bookingData.newStudent.name || !bookingData.newStudent.phoneNumber)
+      (!bookingData.newStudent.name || !bookingData.newStudent.phoneNumber || !bookingData.newStudent.fatherName || !bookingData.newStudent.fatherPhone)
     ) {
-      setError("Fill in student name and phone");
+      setError("Fill in student name, phone, father name, and father phone");
       return;
     }
 
@@ -289,7 +289,7 @@ export default function BookingClient() {
     if (bookingData.selectedShifts.length === 0) return false;
     if (bookingData.isNewStudent) {
       return !!(
-        bookingData.newStudent.name && bookingData.newStudent.phoneNumber
+        bookingData.newStudent.name && bookingData.newStudent.phoneNumber && bookingData.newStudent.fatherName && bookingData.newStudent.fatherPhone
       );
     }
     return !!bookingData.selectedStudent;
@@ -861,6 +861,50 @@ export default function BookingClient() {
                           }))
                         }
                       />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs font-semibold uppercase">
+                          Father Name *
+                        </Label>
+                        <Input
+                          className="mt-1.5"
+                          placeholder="Father's name"
+                          value={bookingData.newStudent.fatherName}
+                          onChange={(e) =>
+                            setBookingData((p) => ({
+                              ...p,
+                              newStudent: {
+                                ...p.newStudent,
+                                fatherName: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold uppercase">
+                          Father Phone *
+                        </Label>
+                        <Input
+                          className="mt-1.5"
+                          placeholder="10-digit number"
+                          maxLength={10}
+                          value={bookingData.newStudent.fatherPhone}
+                          onChange={(e) => {
+                            const inputValue = e.target.value;
+                            if (/^\d*$/.test(inputValue)) {
+                              setBookingData((p) => ({
+                                ...p,
+                                newStudent: {
+                                  ...p.newStudent,
+                                  fatherPhone: inputValue,
+                                },
+                              }));
+                            }
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

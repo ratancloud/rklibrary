@@ -153,7 +153,7 @@ model Seat {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  floor         Floor          @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  floor       Floor            @relation(fields: [floorId], references: [id], onDelete: Cascade)
   assignments SeatAssignment[]
 
   @@unique([floorId, seatNo])
@@ -173,7 +173,7 @@ model Shift {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  library     Library             @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  library     Library          @relation(fields: [libraryId], references: [id], onDelete: Cascade)
   assignments SeatAssignment[]
 
   @@unique([libraryId, name])
@@ -183,50 +183,66 @@ model Shift {
 model Student {
   id        String @id @default(cuid())
   libraryId String
-  memberId     Int @default(autoincrement())
-  name         String
-  gender       String
-  phoneNumber  String
-  address      String?
-  lockerNumber Int?    @unique
+  memberId  Int    @default(autoincrement())
+
+  name          String
+  gender        String
+  aadhaarNumber String?
+  phoneNumber   String
+  fatherName    String
+  fatherPhone   String
+
+  temporaryAddress String?
+  address          String? //permanent address
+  lockerNumber     Int?
+
+  profileImageUrl String?
+  profileImageId  String?
+
+  aadhaarFrontUrl String?
+  aadhaarFrontId  String?
+
+  aadhaarBackUrl String?
+  aadhaarBackId  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  library       Library        @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  library       Library          @relation(fields: [libraryId], references: [id], onDelete: Cascade)
   subscriptions Subscription[]
   assignments   SeatAssignment[]
 
   @@unique([libraryId, phoneNumber])
+  @@unique([libraryId, lockerNumber])
   @@index([libraryId])
 }
 
 model Subscription {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   libraryId String
   studentId String?
 
-  floorName  String
-  seatNo      Int
-  shiftName  ShiftType[]
+  floorName String
+  seatNo    Int
+  shiftName ShiftType[]
 
-  studentName String
-  studentGender String
-  studentPhone String
+  studentName    String
+  studentGender  String
+  studentPhone   String
   studentAddress String?
 
   startDate   DateTime
   endDate     DateTime
   totalAmount Int
-  discount    Int    @default(0)
-  amountPaid  Int    @default(0)
+  discount    Int      @default(0)
+  amountPaid  Int      @default(0)
   status      Status   @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  library            Library             @relation(fields: [libraryId], references: [id])
-  student            Student?             @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  library Library  @relation(fields: [libraryId], references: [id])
+  student Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
 
   @@index([libraryId, status])
   @@index([startDate, endDate])
@@ -242,11 +258,11 @@ model SeatAssignment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  seat      Seat    @relation(fields: [seatId], references: [id], onDelete: Cascade)
-  shift     Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  seat    Seat    @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  @@unique([seatId, shiftId]) 
+  @@unique([seatId, shiftId])
   @@index([studentId])
 }
 

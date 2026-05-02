@@ -56,7 +56,7 @@ export function SeatMapHeader({
     <header className="flex flex-col justify-between gap-5 pb-6 border-b border-border/50">
       <div className="flex items-center gap-4">
         <Select value={selectedFloor} onValueChange={setSelectedFloor}>
-          <SelectTrigger className="w-48 bg-background border-border shadow-sm">
+          <SelectTrigger className="bg-background border-border shadow-sm">
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-primary shrink-0" />
               <SelectValue placeholder="Select floor" />

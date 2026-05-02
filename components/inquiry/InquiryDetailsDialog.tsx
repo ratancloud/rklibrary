@@ -66,7 +66,7 @@ export default function InquiryDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden rounded-[2rem] border-none shadow-2xl bg-background">
+      <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden rounded-4xl border-none shadow-2xl bg-background">
         <div className={cn("p-6 flex items-center justify-between", cfg.light)}>
           <div className="flex items-center gap-4">
             <div
