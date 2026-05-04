@@ -72,6 +72,21 @@ export async function GET() {
           },
         },
       },
+      select: {
+        id: true,
+        memberId: true,
+        name: true,
+        gender: true,
+        phoneNumber: true,
+        aadhaarNumber: true,
+        fatherName: true,
+        fatherPhone: true,
+        address: true,
+        temporaryAddress: true,
+        lockerNumber: true,
+        profileImageUrl: true,
+        subscriptions: true,
+      },
     });
 
     return NextResponse.json({ success: true, data: students });
@@ -135,13 +150,6 @@ export async function POST(req: Request) {
       if (existing.aadhaarNumber === data.aadhaarNumber) {
         return NextResponse.json(
           { error: "This Aadhaar number is already registered." },
-          { status: 400 },
-        );
-      }
-
-      if (data.lockerNumber && existing.lockerNumber === data.lockerNumber) {
-        return NextResponse.json(
-          { error: "This locker number is already assigned." },
           { status: 400 },
         );
       }

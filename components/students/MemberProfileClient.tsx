@@ -141,7 +141,7 @@ export default function MemberProfileClient({ student }: MemberProfileProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Left Column: Personal Info Card */}
           <div className="md:col-span-1 space-y-6">
-            <div className="bg-card rounded-[2rem] p-6 border border-border shadow-sm relative overflow-hidden">
+            <div className="bg-card rounded-4xl p-6 border border-border shadow-sm relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -mr-10 -mt-10" />
 
               <div className="flex flex-col items-center text-center mb-6">

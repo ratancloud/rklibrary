@@ -1,21 +1,19 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import * as z from "zod";
 import {
   Loader2,
-  Camera,
   Upload,
   X,
   User,
   CreditCard,
-  RefreshCw,
+  Image as ImageIcon,
   type LucideIcon,
 } from "lucide-react";
-import Webcam from "react-webcam";
 import { upload } from "@imagekit/javascript";
 import {
   Select,
@@ -70,14 +68,17 @@ interface StudentInitialData {
   temporaryAddress?: string | null;
   lockerNumber?: number | null;
   profileImageUrl?: string | null;
+  profileImageId?: string | null;
   aadhaarFrontUrl?: string | null;
+  aadhaarFrontId?: string | null;
   aadhaarBackUrl?: string | null;
+  aadhaarBackId?: string | null;
 }
 
 interface ImageState {
-  profileImage: { file: File | null; preview: string; fileId?: string };
-  aadhaarFront: { file: File | null; preview: string; fileId?: string };
-  aadhaarBack: { file: File | null; preview: string; fileId?: string };
+  profileImage: { file: File | null; preview: string; fileId?: string | null };
+  aadhaarFront: { file: File | null; preview: string; fileId?: string | null };
+  aadhaarBack: { file: File | null; preview: string; fileId?: string | null };
 }
 
 export default function StudentForm({
@@ -90,45 +91,30 @@ export default function StudentForm({
   onSuccess?: () => void;
 }) {
   const [statusText, setStatusText] = useState("");
-  const [cameraActive, setCameraActive] = useState<keyof ImageState | null>(null);
-  const [cameraReady, setCameraReady] = useState(false);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("user"); // ADDED: Camera flip state
 
   const [images, setImages] = useState<ImageState>({
     profileImage: {
       file: null,
       preview: initialData?.profileImageUrl ?? "",
-      fileId: undefined,
+      fileId: initialData?.profileImageId ?? undefined,
     },
     aadhaarFront: {
       file: null,
       preview: initialData?.aadhaarFrontUrl ?? "",
-      fileId: undefined,
+      fileId: initialData?.aadhaarFrontId ?? undefined,
     },
     aadhaarBack: {
       file: null,
       preview: initialData?.aadhaarBackUrl ?? "",
-      fileId: undefined,
+      fileId: initialData?.aadhaarBackId ?? undefined,
     },
   });
 
-  const webcamRef = useRef<Webcam>(null);
   const fileInputRefs = {
     profileImage: useRef<HTMLInputElement>(null),
     aadhaarFront: useRef<HTMLInputElement>(null),
     aadhaarBack: useRef<HTMLInputElement>(null),
   };
-
-  useEffect(() => {
-    const currentWebcam = webcamRef.current;
-
-    return () => {
-      const video = currentWebcam?.video;
-      if (video?.srcObject) {
-        (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
-      }
-    };
-  }, [cameraActive]);
 
   const {
     control,
@@ -161,48 +147,11 @@ export default function StudentForm({
     reader.onload = (e) => {
       setImages((prev) => ({
         ...prev,
-        [type]: { file, preview: e.target?.result as string },
+        [type]: { file, preview: e.target?.result as string, fileId: undefined },
       }));
     };
     reader.readAsDataURL(file);
   };
-
-  const closeWebcam = useCallback(() => {
-    const video = webcamRef.current?.video;
-    if (video?.srcObject) {
-      (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
-      video.srcObject = null;
-    }
-    setCameraActive(null);
-    setCameraReady(false);
-  }, []);
-
-  const capturePhoto = useCallback(
-    (type: keyof ImageState) => {
-      const screenshot = webcamRef.current?.getScreenshot();
-      if (!screenshot) return toast.error("Camera not ready");
-
-      // Stop stream immediately so the UI closes right away
-      const video = webcamRef.current?.video;
-      if (video?.srcObject) {
-        (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
-        video.srcObject = null;
-      }
-      setCameraActive(null);
-      setCameraReady(false);
-
-      // Then do the async blob conversion in the background
-      fetch(screenshot)
-        .then((res) => res.blob())
-        .then((blob) => {
-          const file = new File([blob], `${type}-${Date.now()}.jpg`, {
-            type: "image/jpeg",
-          });
-          handleFileSelect(type, file);
-        });
-    },
-    [],
-  );
 
   const uploadToImageKit = async (file: File) => {
     const { signature, expire, token, publicKey } = await authenticator();
@@ -254,19 +203,36 @@ export default function StudentForm({
 
         const results = await Promise.all(uploadPromises);
 
-        const uploadResults: Record<string, string> = {};
+        const uploadResults: Record<string, string | null> = {};
 
+        // Map existing or cleared images
         (Object.keys(images) as Array<keyof ImageState>).forEach((key) => {
           if (!uploadKeys.includes(key)) {
-            uploadResults[`${key}Url`] = images[key].preview;
+            uploadResults[`${key}Url`] = images[key].preview ? images[key].preview : null;
+            uploadResults[`${key}Id`] = images[key].preview ? images[key].fileId || null : null;
           }
         });
 
+        // Map newly uploaded images
         results.forEach((res) => {
           uploadResults[`${res.key}Url`] = res.url;
           uploadResults[`${res.key}Id`] = res.fileId;
           newlyUploadedFileIds.push(res.fileId);
         });
+
+        // Determine which old images need to be deleted
+        const oldFileIdsToDelete: string[] = [];
+        if (isEditing && initialData) {
+          if (initialData.profileImageId && uploadResults.profileImageId !== initialData.profileImageId) {
+            oldFileIdsToDelete.push(initialData.profileImageId);
+          }
+          if (initialData.aadhaarFrontId && uploadResults.aadhaarFrontId !== initialData.aadhaarFrontId) {
+            oldFileIdsToDelete.push(initialData.aadhaarFrontId);
+          }
+          if (initialData.aadhaarBackId && uploadResults.aadhaarBackId !== initialData.aadhaarBackId) {
+            oldFileIdsToDelete.push(initialData.aadhaarBackId);
+          }
+        }
 
         setStatusText("Saving student profile...");
         const payload = {
@@ -287,6 +253,15 @@ export default function StudentForm({
         if (!res.ok) {
           const err = await res.json();
           throw new Error(err.error || "Failed to save student data");
+        }
+
+        // If the database updated successfully, delete the old orphaned images
+        if (oldFileIdsToDelete.length > 0) {
+          fetch("/api/imagekit/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileIds: oldFileIdsToDelete }),
+          }).catch((err) => console.error("Failed to delete old images", err));
         }
 
         return await res.json();
@@ -326,7 +301,6 @@ export default function StudentForm({
       <Card
         className={cn(
           "overflow-hidden border-0 shadow-md hover:shadow-lg transition-all",
-          cameraActive === type ? "ring-2 ring-primary" : "",
           loading && "opacity-60 pointer-events-none",
         )}
       >
@@ -335,147 +309,73 @@ export default function StudentForm({
             <Icon className="w-4 h-4" /> {label}
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-4">
-          {cameraActive === type ? (
-            <div className="w-full space-y-3">
-              <div
-                className={cn(
-                  "relative bg-black rounded-lg overflow-hidden w-full",
-                  isProfile ? "aspect-square" : "aspect-3/2",
-                )}
-              >
-                <Webcam
-                  key={type}
-                  ref={webcamRef}
-                  audio={false}
-                  screenshotFormat="image/jpeg"
-                  videoConstraints={{
-                    facingMode: facingMode, // UPDATED: Use the facingMode state
-                    aspectRatio: isProfile ? 1 : 1.5,
-                  }}
-                  onUserMedia={() => setCameraReady(true)}
-                  className="w-full h-full object-cover"
-                />
-                {!cameraReady && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-xs">
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />{" "}
-                    Initializing...
-                  </div>
-                )}
-                <div
-                  className={cn(
-                    "absolute inset-4 border-2 border-dashed border-white/40 pointer-events-none",
-                    isProfile && "rounded-full",
-                  )}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => capturePhoto(type)}
-                  disabled={!cameraReady}
-                >
-                  Capture
-                </Button>
-                {/* ADDED: Flip Camera Button */}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setFacingMode((prev) => prev === "user" ? "environment" : "user")}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={closeWebcam}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="w-full space-y-3">
-              <div
-                className={cn(
-                  "relative group border-2 border-dashed rounded-lg bg-muted/10 flex items-center justify-center overflow-hidden",
-                  images[type].preview
-                    ? "border-transparent"
-                    : "border-muted-foreground/20",
-                  isProfile
-                    ? "w-32 h-32 rounded-full mx-auto"
-                    : "w-full aspect-3/2",
-                )}
-              >
-                {images[type].preview ? (
-                  <>
-                    <Image
-                      src={images[type].preview}
-                      alt={label}
-                      fill
-                      className="object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setImages((prev) => ({
-                          ...prev,
-                          [type]: { file: null, preview: "" },
-                        }))
+        <CardContent className="flex flex-col items-center space-y-4 pt-4">
+          <div className="w-full space-y-3">
+            <div
+              className={cn(
+                "relative group border-2 border-dashed rounded-lg bg-muted/10 flex items-center justify-center overflow-hidden",
+                images[type].preview
+                  ? "border-transparent"
+                  : "border-muted-foreground/20",
+                isProfile
+                  ? "w-32 h-32 rounded-full mx-auto"
+                  : "w-full aspect-3/2",
+              )}
+            >
+              {images[type].preview ? (
+                <>
+                  <Image
+                    src={images[type].preview}
+                    alt={label}
+                    fill
+                    className="object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImages((prev) => ({
+                        ...prev,
+                        [type]: { file: null, preview: "", fileId: null },
+                      }));
+                      if (fileInputRefs[type].current) {
+                        fileInputRefs[type].current.value = "";
                       }
-                      className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                  </>
-                ) : (
-                  <div className="text-center">
-                    <Camera className="w-8 h-8 mx-auto text-muted-foreground/30 mb-1" />
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                      Missing
-                    </p>
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => {
-                    setCameraReady(false);
-                    setFacingMode(isProfile ? "user" : "environment"); // ADDED: Smart default facing mode based on image type
-                    setCameraActive(type);
-                  }}
-                >
-                  <Camera className="w-3 h-3 mr-1" /> Camera
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => fileInputRefs[type].current?.click()}
-                >
-                  <Upload className="w-3 h-3 mr-1" /> File
-                </Button>
-                <input
-                  type="file"
-                  ref={fileInputRefs[type]}
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) =>
-                    handleFileSelect(type, e.target.files?.[0] || null)
-                  }
-                />
-              </div>
+                    }}
+                    className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </>
+              ) : (
+                <div className="text-center">
+                  <ImageIcon className="w-8 h-8 mx-auto text-muted-foreground/30 mb-1" />
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                    Missing
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+            <div className="w-full">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => fileInputRefs[type].current?.click()}
+              >
+                <Upload className="w-3 h-3 mr-1" /> Select File
+              </Button>
+              <input
+                type="file"
+                ref={fileInputRefs[type]}
+                className="hidden"
+                accept="image/*"
+                onChange={(e) =>
+                  handleFileSelect(type, e.target.files?.[0] || null)
+                }
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -502,7 +402,7 @@ export default function StudentForm({
                 Personal Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="font-semibold text-sm">
                   Full Name <span className="text-red-500">*</span>
@@ -645,7 +545,7 @@ export default function StudentForm({
                 Guardian Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="fatherName" className="font-semibold text-sm">
                   Father&apos;s Name <span className="text-red-500">*</span>
@@ -718,7 +618,7 @@ export default function StudentForm({
                 Address & Facilities
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label className="font-semibold text-sm">
                   Permanent Address
