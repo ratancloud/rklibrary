@@ -2,6 +2,29 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import z from "zod";
+
+const studentSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  gender: z.string().min(1, "Gender is required"),
+  phoneNumber: z.string().min(10, "Phone number must be valid"),
+  fatherName: z.string().min(1, "Father's name is required"),
+  fatherPhone: z.string().min(10, "Father's phone must be valid"),
+  aadhaarNumber: z.string().min(12, "Aadhaar number must be valid"),
+  address: z.string().optional().nullable(),
+  temporaryAddress: z.string().optional().nullable(),
+  lockerNumber: z
+    .union([z.string(), z.number()])
+    .optional()
+    .nullable()
+    .transform((val) => (val ? Number(val) : null)),
+  profileImageUrl: z.string().optional().nullable(),
+  profileImageId: z.string().optional().nullable(),
+  aadhaarFrontUrl: z.string().optional().nullable(),
+  aadhaarFrontId: z.string().optional().nullable(),
+  aadhaarBackUrl: z.string().optional().nullable(),
+  aadhaarBackId: z.string().optional().nullable(),
+});
 
 async function getLibraryId(userId: string) {
   const library = await prisma.library.findUnique({
@@ -11,6 +34,8 @@ async function getLibraryId(userId: string) {
   return library?.id;
 }
 
+// GET /api/students - Fetch all students for the library
+// it is used in student table page
 export async function GET() {
   try {
     const session = await auth.api.getSession({
@@ -75,48 +100,56 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const {
-      name,
-      gender,
-      phoneNumber,
-      fatherName,
-      fatherPhone,
-      aadhaarNumber,
-      address,
-      temporaryAddress,
-      lockerNumber,
-      profileImageUrl,
-      profileImageId,
-      aadhaarFrontUrl,
-      aadhaarFrontId,
-      aadhaarBackUrl,
-      aadhaarBackId,
-    } = body;
-    
-    if (!name || !gender || !phoneNumber || !fatherName || !fatherPhone) {
+
+    // 1. Validate input
+    const validation = studentSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        {
+          error: "Missing or invalid fields",
+          details: validation.error.flatten().fieldErrors,
+        },
         { status: 400 },
       );
     }
 
+    const data = validation.data;
+    const existing = await prisma.student.findFirst({
+      where: {
+        libraryId,
+        OR: [
+          { phoneNumber: data.phoneNumber },
+          { aadhaarNumber: data.aadhaarNumber },
+        ],
+      },
+    });
+
+    if (existing) {
+      if (existing.phoneNumber === data.phoneNumber) {
+        return NextResponse.json(
+          { error: "This phone number is already registered." },
+          { status: 400 },
+        );
+      }
+
+      if (existing.aadhaarNumber === data.aadhaarNumber) {
+        return NextResponse.json(
+          { error: "This Aadhaar number is already registered." },
+          { status: 400 },
+        );
+      }
+
+      if (data.lockerNumber && existing.lockerNumber === data.lockerNumber) {
+        return NextResponse.json(
+          { error: "This locker number is already assigned." },
+          { status: 400 },
+        );
+      }
+    }
+
     const student = await prisma.student.create({
       data: {
-        name,
-        gender,
-        phoneNumber,
-        fatherName,
-        fatherPhone,
-        aadhaarNumber,
-        address,
-        temporaryAddress,
-        lockerNumber: lockerNumber ? parseInt(lockerNumber) : null,
-        profileImageUrl,
-        profileImageId,
-        aadhaarFrontUrl,
-        aadhaarFrontId,
-        aadhaarBackUrl,
-        aadhaarBackId,
+        ...data,
         libraryId,
       },
     });
@@ -124,28 +157,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, data: student }, { status: 201 });
   } catch (error: unknown) {
     console.error("Create Student Error:", error);
-    const err = error as { code?: string; meta?: { target?: string[] }; message?: string };
+
+    const err = error as any;
+
     if (err.code === "P2002") {
-      const field = err.meta?.target?.[0];
-      console.log(field);
-      
-      let errorMsg = "A record with this information already exists";
-      
-      if (field === "phoneNumber") {
-        errorMsg = "This phone number is already registered";
-      } else if (field === "lockerNumber") {
-        errorMsg = "This locker number is already assigned to another student";
-      } else if (field === "fatherPhone") {
-        errorMsg = "This father's phone number is already registered";
-      }
-      
       return NextResponse.json(
-        { error: errorMsg },
+        { error: "Duplicate entry detected. Please check your inputs." },
         { status: 400 },
       );
     }
+
     return NextResponse.json(
-      { error: err.message || "Internal Server Error" },
+      { error: "Internal Server Error" },
       { status: 500 },
     );
   }

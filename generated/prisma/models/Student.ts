@@ -279,7 +279,7 @@ export type StudentGroupByOutputType = {
   memberId: number
   name: string
   gender: string
-  aadhaarNumber: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -325,7 +325,7 @@ export type StudentWhereInput = {
   memberId?: Prisma.IntFilter<"Student"> | number
   name?: Prisma.StringFilter<"Student"> | string
   gender?: Prisma.StringFilter<"Student"> | string
-  aadhaarNumber?: Prisma.StringNullableFilter<"Student"> | string | null
+  aadhaarNumber?: Prisma.StringFilter<"Student"> | string
   phoneNumber?: Prisma.StringFilter<"Student"> | string
   fatherName?: Prisma.StringFilter<"Student"> | string
   fatherPhone?: Prisma.StringFilter<"Student"> | string
@@ -351,7 +351,7 @@ export type StudentOrderByWithRelationInput = {
   memberId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   gender?: Prisma.SortOrder
-  aadhaarNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  aadhaarNumber?: Prisma.SortOrder
   phoneNumber?: Prisma.SortOrder
   fatherName?: Prisma.SortOrder
   fatherPhone?: Prisma.SortOrder
@@ -373,8 +373,8 @@ export type StudentOrderByWithRelationInput = {
 
 export type StudentWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  libraryId_phoneNumber?: Prisma.StudentLibraryIdPhoneNumberCompoundUniqueInput
-  libraryId_lockerNumber?: Prisma.StudentLibraryIdLockerNumberCompoundUniqueInput
+  aadhaarNumber?: string
+  phoneNumber?: string
   AND?: Prisma.StudentWhereInput | Prisma.StudentWhereInput[]
   OR?: Prisma.StudentWhereInput[]
   NOT?: Prisma.StudentWhereInput | Prisma.StudentWhereInput[]
@@ -382,8 +382,6 @@ export type StudentWhereUniqueInput = Prisma.AtLeast<{
   memberId?: Prisma.IntFilter<"Student"> | number
   name?: Prisma.StringFilter<"Student"> | string
   gender?: Prisma.StringFilter<"Student"> | string
-  aadhaarNumber?: Prisma.StringNullableFilter<"Student"> | string | null
-  phoneNumber?: Prisma.StringFilter<"Student"> | string
   fatherName?: Prisma.StringFilter<"Student"> | string
   fatherPhone?: Prisma.StringFilter<"Student"> | string
   temporaryAddress?: Prisma.StringNullableFilter<"Student"> | string | null
@@ -400,7 +398,7 @@ export type StudentWhereUniqueInput = Prisma.AtLeast<{
   library?: Prisma.XOR<Prisma.LibraryScalarRelationFilter, Prisma.LibraryWhereInput>
   subscriptions?: Prisma.SubscriptionListRelationFilter
   assignments?: Prisma.SeatAssignmentListRelationFilter
-}, "id" | "libraryId_phoneNumber" | "libraryId_lockerNumber">
+}, "id" | "aadhaarNumber" | "phoneNumber">
 
 export type StudentOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -408,7 +406,7 @@ export type StudentOrderByWithAggregationInput = {
   memberId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   gender?: Prisma.SortOrder
-  aadhaarNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  aadhaarNumber?: Prisma.SortOrder
   phoneNumber?: Prisma.SortOrder
   fatherName?: Prisma.SortOrder
   fatherPhone?: Prisma.SortOrder
@@ -439,7 +437,7 @@ export type StudentScalarWhereWithAggregatesInput = {
   memberId?: Prisma.IntWithAggregatesFilter<"Student"> | number
   name?: Prisma.StringWithAggregatesFilter<"Student"> | string
   gender?: Prisma.StringWithAggregatesFilter<"Student"> | string
-  aadhaarNumber?: Prisma.StringNullableWithAggregatesFilter<"Student"> | string | null
+  aadhaarNumber?: Prisma.StringWithAggregatesFilter<"Student"> | string
   phoneNumber?: Prisma.StringWithAggregatesFilter<"Student"> | string
   fatherName?: Prisma.StringWithAggregatesFilter<"Student"> | string
   fatherPhone?: Prisma.StringWithAggregatesFilter<"Student"> | string
@@ -461,7 +459,7 @@ export type StudentCreateInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -487,7 +485,7 @@ export type StudentUncheckedCreateInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -511,7 +509,7 @@ export type StudentUpdateInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -537,7 +535,7 @@ export type StudentUncheckedUpdateInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -562,7 +560,7 @@ export type StudentCreateManyInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -584,7 +582,7 @@ export type StudentUpdateManyMutationInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -607,7 +605,7 @@ export type StudentUncheckedUpdateManyInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -632,16 +630,6 @@ export type StudentListRelationFilter = {
 
 export type StudentOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
-}
-
-export type StudentLibraryIdPhoneNumberCompoundUniqueInput = {
-  libraryId: string
-  phoneNumber: string
-}
-
-export type StudentLibraryIdLockerNumberCompoundUniqueInput = {
-  libraryId: string
-  lockerNumber: number
 }
 
 export type StudentCountOrderByAggregateInput = {
@@ -818,7 +806,7 @@ export type StudentCreateWithoutLibraryInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -842,7 +830,7 @@ export type StudentUncheckedCreateWithoutLibraryInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -896,7 +884,7 @@ export type StudentScalarWhereInput = {
   memberId?: Prisma.IntFilter<"Student"> | number
   name?: Prisma.StringFilter<"Student"> | string
   gender?: Prisma.StringFilter<"Student"> | string
-  aadhaarNumber?: Prisma.StringNullableFilter<"Student"> | string | null
+  aadhaarNumber?: Prisma.StringFilter<"Student"> | string
   phoneNumber?: Prisma.StringFilter<"Student"> | string
   fatherName?: Prisma.StringFilter<"Student"> | string
   fatherPhone?: Prisma.StringFilter<"Student"> | string
@@ -918,7 +906,7 @@ export type StudentCreateWithoutSubscriptionsInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -943,7 +931,7 @@ export type StudentUncheckedCreateWithoutSubscriptionsInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -982,7 +970,7 @@ export type StudentUpdateWithoutSubscriptionsInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1007,7 +995,7 @@ export type StudentUncheckedUpdateWithoutSubscriptionsInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1030,7 +1018,7 @@ export type StudentCreateWithoutAssignmentsInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -1055,7 +1043,7 @@ export type StudentUncheckedCreateWithoutAssignmentsInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -1094,7 +1082,7 @@ export type StudentUpdateWithoutAssignmentsInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1119,7 +1107,7 @@ export type StudentUncheckedUpdateWithoutAssignmentsInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1142,7 +1130,7 @@ export type StudentCreateManyLibraryInput = {
   memberId?: number
   name: string
   gender: string
-  aadhaarNumber?: string | null
+  aadhaarNumber: string
   phoneNumber: string
   fatherName: string
   fatherPhone: string
@@ -1164,7 +1152,7 @@ export type StudentUpdateWithoutLibraryInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1188,7 +1176,7 @@ export type StudentUncheckedUpdateWithoutLibraryInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1212,7 +1200,7 @@ export type StudentUncheckedUpdateManyWithoutLibraryInput = {
   memberId?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.StringFieldUpdateOperationsInput | string
-  aadhaarNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aadhaarNumber?: Prisma.StringFieldUpdateOperationsInput | string
   phoneNumber?: Prisma.StringFieldUpdateOperationsInput | string
   fatherName?: Prisma.StringFieldUpdateOperationsInput | string
   fatherPhone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1394,7 +1382,7 @@ export type $StudentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     memberId: number
     name: string
     gender: string
-    aadhaarNumber: string | null
+    aadhaarNumber: string
     phoneNumber: string
     fatherName: string
     fatherPhone: string

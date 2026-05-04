@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import * as z from "zod";
 import {
   Loader2,
@@ -11,6 +12,7 @@ import {
   X,
   User,
   CreditCard,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 import Webcam from "react-webcam";
@@ -87,12 +89,10 @@ export default function StudentForm({
   isEditing?: boolean;
   onSuccess?: () => void;
 }) {
-  const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState("");
-  const [cameraActive, setCameraActive] = useState<keyof ImageState | null>(
-    null,
-  );
+  const [cameraActive, setCameraActive] = useState<keyof ImageState | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user"); // ADDED: Camera flip state
 
   const [images, setImages] = useState<ImageState>({
     profileImage: {
@@ -118,6 +118,17 @@ export default function StudentForm({
     aadhaarFront: useRef<HTMLInputElement>(null),
     aadhaarBack: useRef<HTMLInputElement>(null),
   };
+
+  useEffect(() => {
+    const currentWebcam = webcamRef.current;
+
+    return () => {
+      const video = currentWebcam?.video;
+      if (video?.srcObject) {
+        (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, [cameraActive]);
 
   const {
     control,
@@ -157,28 +168,41 @@ export default function StudentForm({
   };
 
   const closeWebcam = useCallback(() => {
-    const stream = webcamRef.current?.video?.srcObject as MediaStream;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
+    const video = webcamRef.current?.video;
+    if (video?.srcObject) {
+      (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+      video.srcObject = null;
     }
     setCameraActive(null);
     setCameraReady(false);
   }, []);
 
-  const capturePhoto = useCallback((type: keyof ImageState) => {
-    const screenshot = webcamRef.current?.getScreenshot();
-    if (!screenshot) return toast.error("Camera not ready");
+  const capturePhoto = useCallback(
+    (type: keyof ImageState) => {
+      const screenshot = webcamRef.current?.getScreenshot();
+      if (!screenshot) return toast.error("Camera not ready");
 
-    fetch(screenshot)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const file = new File([blob], `${type}-${Date.now()}.jpg`, {
-          type: "image/jpeg",
+      // Stop stream immediately so the UI closes right away
+      const video = webcamRef.current?.video;
+      if (video?.srcObject) {
+        (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+        video.srcObject = null;
+      }
+      setCameraActive(null);
+      setCameraReady(false);
+
+      // Then do the async blob conversion in the background
+      fetch(screenshot)
+        .then((res) => res.blob())
+        .then((blob) => {
+          const file = new File([blob], `${type}-${Date.now()}.jpg`, {
+            type: "image/jpeg",
+          });
+          handleFileSelect(type, file);
         });
-        handleFileSelect(type, file);
-        closeWebcam();
-      });
-  }, [closeWebcam]);
+    },
+    [],
+  );
 
   const uploadToImageKit = async (file: File) => {
     const { signature, expire, token, publicKey } = await authenticator();
@@ -194,102 +218,98 @@ export default function StudentForm({
     return { url: res.url || "", fileId: res.fileId || "" };
   };
 
-  // Rollback function to delete images if DB save fails
   const rollbackUploadedImages = async (fileIds: string[]) => {
     if (fileIds.length === 0) return;
-
     setStatusText("Reverting uploaded images...");
-
     try {
       const response = await fetch("/api/imagekit/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileIds: fileIds,
-        }),
+        body: JSON.stringify({ fileIds }),
       });
-
-      if (!response.ok) {
-        throw new Error("Batch rollback failed");
-      }
-
+      if (!response.ok) throw new Error("Batch rollback failed");
       console.log("Images rolled back successfully");
     } catch (err) {
       console.error("Critical: Failed to rollback images", err);
     }
   };
 
-  const onSubmit: SubmitHandler<StudentFormData> = async (data) => {
-  setLoading(true);
-  const newlyUploadedFileIds: string[] = [];
+  const { mutate: submitStudent, isPending: loading } = useMutation({
+    mutationFn: async (data: StudentFormData) => {
+      const newlyUploadedFileIds: string[] = [];
 
-  try {
-    setStatusText("Uploading media...");
-    
-    // 1. Identify which keys need uploading
-    const uploadKeys = (Object.keys(images) as Array<keyof ImageState>).filter(
-      (key) => images[key].file && !images[key].preview.startsWith("https")
-    );
+      try {
+        setStatusText("Uploading media...");
 
-    // 2. Fire all uploads in parallel
-    const uploadPromises = uploadKeys.map(async (key) => {
-      const result = await uploadToImageKit(images[key].file!);
-      return { key, ...result };
-    });
+        const uploadKeys = (
+          Object.keys(images) as Array<keyof ImageState>
+        ).filter(
+          (key) => images[key].file && !images[key].preview.startsWith("https"),
+        );
 
-    const results = await Promise.all(uploadPromises);
+        const uploadPromises = uploadKeys.map(async (key) => {
+          const result = await uploadToImageKit(images[key].file!);
+          return { key, ...result };
+        });
 
-    // 3. Assemble results into a single object for the payload
-    const uploadResults: Record<string, string> = {};
-    
-    // Initialize with existing previews (for those not re-uploaded)
-    (Object.keys(images) as Array<keyof ImageState>).forEach(key => {
-        if (!uploadKeys.includes(key)) {
+        const results = await Promise.all(uploadPromises);
+
+        const uploadResults: Record<string, string> = {};
+
+        (Object.keys(images) as Array<keyof ImageState>).forEach((key) => {
+          if (!uploadKeys.includes(key)) {
             uploadResults[`${key}Url`] = images[key].preview;
+          }
+        });
+
+        results.forEach((res) => {
+          uploadResults[`${res.key}Url`] = res.url;
+          uploadResults[`${res.key}Id`] = res.fileId;
+          newlyUploadedFileIds.push(res.fileId);
+        });
+
+        setStatusText("Saving student profile...");
+        const payload = {
+          ...data,
+          ...uploadResults,
+          lockerNumber: data.lockerNumber ? Number(data.lockerNumber) : null,
+        };
+
+        const res = await fetch(
+          isEditing ? `/api/students/${initialData?.id}` : "/api/students",
+          {
+            method: isEditing ? "PATCH" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || "Failed to save student data");
         }
-    });
 
-    // Merge new upload results
-    results.forEach((res) => {
-      uploadResults[`${res.key}Url`] = res.url;
-      uploadResults[`${res.key}Id`] = res.fileId;
-      newlyUploadedFileIds.push(res.fileId);
-    });
-
-    // 4. Save to Database
-    setStatusText("Saving student profile...");
-    const payload = {
-      ...data,
-      ...uploadResults,
-      lockerNumber: data.lockerNumber ? Number(data.lockerNumber) : null,
-    };
-
-    const res = await fetch(
-      isEditing ? `/api/students/${initialData?.id}` : "/api/students",
-      {
-        method: isEditing ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        return await res.json();
+      } catch (err) {
+        await rollbackUploadedImages(newlyUploadedFileIds);
+        throw err;
       }
-    );
+    },
+    onSuccess: () => {
+      toast.success(isEditing ? "Profile updated" : "Student registered");
+      if (!isEditing) reset();
+      onSuccess?.();
+      setStatusText("");
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Error occurred");
+      setStatusText("");
+    },
+  });
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Failed to save student data");
-    }
-
-    toast.success(isEditing ? "Profile updated" : "Student registered");
-    if (!isEditing) reset();
-    onSuccess?.();
-  } catch (err) {
-    console.error(err);
-    toast.error(err instanceof Error ? err.message : "Error occurred");
-    await rollbackUploadedImages(newlyUploadedFileIds);
-  } finally {
-    setLoading(false);
-    setStatusText("");
-  }
-};
+  const onSubmit: SubmitHandler<StudentFormData> = (data) => {
+    submitStudent(data);
+  };
 
   const ImageUploadCard = ({
     type,
@@ -325,11 +345,12 @@ export default function StudentForm({
                 )}
               >
                 <Webcam
+                  key={type}
                   ref={webcamRef}
                   audio={false}
                   screenshotFormat="image/jpeg"
                   videoConstraints={{
-                    facingMode: isProfile ? "user" : "environment",
+                    facingMode: facingMode, // UPDATED: Use the facingMode state
                     aspectRatio: isProfile ? 1 : 1.5,
                   }}
                   onUserMedia={() => setCameraReady(true)}
@@ -341,7 +362,6 @@ export default function StudentForm({
                     Initializing...
                   </div>
                 )}
-                {/* Visual Overlay Guide */}
                 <div
                   className={cn(
                     "absolute inset-4 border-2 border-dashed border-white/40 pointer-events-none",
@@ -358,6 +378,15 @@ export default function StudentForm({
                   disabled={!cameraReady}
                 >
                   Capture
+                </Button>
+                {/* ADDED: Flip Camera Button */}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setFacingMode((prev) => prev === "user" ? "environment" : "user")}
+                >
+                  <RefreshCw className="w-4 h-4" />
                 </Button>
                 <Button
                   type="button"
@@ -418,7 +447,11 @@ export default function StudentForm({
                   variant="secondary"
                   size="sm"
                   className="text-xs"
-                  onClick={() => setCameraActive(type)}
+                  onClick={() => {
+                    setCameraReady(false);
+                    setFacingMode(isProfile ? "user" : "environment"); // ADDED: Smart default facing mode based on image type
+                    setCameraActive(type);
+                  }}
                 >
                   <Camera className="w-3 h-3 mr-1" /> Camera
                 </Button>

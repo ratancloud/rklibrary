@@ -187,8 +187,8 @@ model Student {
 
   name          String
   gender        String
-  aadhaarNumber String?
-  phoneNumber   String
+  aadhaarNumber String @unique
+  phoneNumber   String @unique
   fatherName    String
   fatherPhone   String
 
@@ -212,8 +212,6 @@ model Student {
   subscriptions Subscription[]
   assignments   SeatAssignment[]
 
-  @@unique([libraryId, phoneNumber])
-  @@unique([libraryId, lockerNumber])
   @@index([libraryId])
 }
 

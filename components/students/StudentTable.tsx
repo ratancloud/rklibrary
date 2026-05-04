@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import AddStudentDialog from "./AddStudentDialog";
 import { formatMemberId } from "@/lib/helper";
 import { useRouter } from "next/navigation";
 import { sendWhatsAppMessage } from "@/lib/sendMsg";
@@ -178,7 +177,6 @@ export default function StudentTable() {
   const [loading, setLoading] = useState(true);
 
   // Action States
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -607,13 +605,6 @@ export default function StudentTable() {
           </Table>
         )}
       </div>
-
-      {/* Add Student Dialog */}
-      <AddStudentDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        onSuccess={fetchStudents}
-      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
