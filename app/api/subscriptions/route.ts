@@ -115,6 +115,7 @@ export async function POST(request: NextRequest) {
           libraryId: library.id,
           fatherName: newStudent.fatherName,
           fatherPhone: newStudent.fatherPhone,
+          aadhaarNumber: newStudent.aadhaarNumber,
         },
       });
       finalStudentId = created.id;
