@@ -79,7 +79,7 @@ export default function EditStudentPage() {
 
   return (
     <div className="min-h-screen w-full bg-background">
-      <div className="max-w-4xl mx-auto pb-10 px-4 md:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto pb-10 px-4 md:px-6 lg:px-8">
         {/* Breadcrumb */}
         <div className="mt-24 mb-6">
           <Breadcrumb>

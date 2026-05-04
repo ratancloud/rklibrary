@@ -47,7 +47,6 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { toast } from 'sonner';
-import EditStudentDialog from '@/components/students/EditStudentDialog';
 import { cn } from '@/lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -280,7 +279,6 @@ export default function StudentProfileClient() {
   const [data, setData] = useState<StudentProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [duesDialog, setDuesDialog] = useState<SubscriptionData | null>(null);
 
@@ -472,7 +470,7 @@ export default function StudentProfileClient() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setShowEditDialog(true)}
+                  onClick={() => router.push(`/student/edit/${student.id}`)}
                   className="gap-1.5 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
                 >
                   <Edit2 className="size-3.5" />
@@ -783,24 +781,6 @@ export default function StudentProfileClient() {
         </div>
       </div>
 
-      {/* Edit Dialog */}
-      {data && (
-        <EditStudentDialog
-          open={showEditDialog}
-          onOpenChange={setShowEditDialog}
-          student={{
-            id: student.id,
-            memberId: student.memberId?.toString() || null,
-            name: student.name,
-            gender: student.gender,
-            phoneNumber: student.phoneNumber,
-            lockerNumber: student.lockerNumber,
-            address: student.address,
-            subscriptions: [],
-          }}
-          onSuccess={fetchStudentData}
-        />
-      )}
 
       {/* Update Dues Dialog */}
       {duesDialog && (

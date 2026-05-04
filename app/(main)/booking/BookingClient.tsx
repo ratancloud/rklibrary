@@ -19,14 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Calendar,
@@ -137,8 +129,6 @@ export default function BookingClient() {
     startDate: initialDate,
     duration: 1,
     selectedStudent: null as StudentResult | null,
-    isNewStudent: false,
-    newStudent: { name: "", phoneNumber: "", gender: "MALE", address: "", fatherName: "", fatherPhone: "" },
     amountPaid: 0,
     discount: 0,
   });
@@ -236,15 +226,8 @@ export default function BookingClient() {
       setError("Select at least one shift");
       return;
     }
-    if (!bookingData.isNewStudent && !bookingData.selectedStudent) {
-      setError("Select or create a student");
-      return;
-    }
-    if (
-      bookingData.isNewStudent &&
-      (!bookingData.newStudent.name || !bookingData.newStudent.phoneNumber || !bookingData.newStudent.fatherName || !bookingData.newStudent.fatherPhone)
-    ) {
-      setError("Fill in student name, phone, father name, and father phone");
+    if (!bookingData.selectedStudent) {
+      setError("Select a student to continue");
       return;
     }
 
@@ -255,12 +238,7 @@ export default function BookingClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           seatId,
-          studentId: bookingData.isNewStudent
-            ? undefined
-            : bookingData.selectedStudent?.id,
-          newStudent: bookingData.isNewStudent
-            ? bookingData.newStudent
-            : undefined,
+          studentId: bookingData.selectedStudent.id,
           shiftIds: bookingData.selectedShifts,
           startDate: bookingData.startDate,
           endDate: getEndDate().toISOString().split("T")[0],
@@ -287,11 +265,6 @@ export default function BookingClient() {
   // ── Validation for step 1 → 2 ────────────────────────────────────────────────
   const canProceed = () => {
     if (bookingData.selectedShifts.length === 0) return false;
-    if (bookingData.isNewStudent) {
-      return !!(
-        bookingData.newStudent.name && bookingData.newStudent.phoneNumber && bookingData.newStudent.fatherName && bookingData.newStudent.fatherPhone
-      );
-    }
     return !!bookingData.selectedStudent;
   };
 
@@ -613,48 +586,11 @@ export default function BookingClient() {
                 <CardTitle className="flex items-center gap-2">
                   <Users size={18} /> Student
                 </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Search and select an existing student to book a seat
+                </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Toggle new vs existing */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() =>
-                      setBookingData((p) => ({
-                        ...p,
-                        isNewStudent: false,
-                        selectedStudent: null,
-                      }))
-                    }
-                    className={cn(
-                      "flex-1 py-2 rounded-lg border text-sm font-medium transition-all",
-                      !bookingData.isNewStudent
-                        ? "bg-primary text-white border-primary"
-                        : "border-border hover:border-primary/50",
-                    )}
-                  >
-                    Existing Student
-                  </button>
-                  <button
-                    onClick={() =>
-                      setBookingData((p) => ({
-                        ...p,
-                        isNewStudent: true,
-                        selectedStudent: null,
-                      }))
-                    }
-                    className={cn(
-                      "flex-1 py-2 rounded-lg border text-sm font-medium transition-all",
-                      bookingData.isNewStudent
-                        ? "bg-primary text-white border-primary"
-                        : "border-border hover:border-primary/50",
-                    )}
-                  >
-                    New Student
-                  </button>
-                </div>
-
-                {/* Existing student search */}
-                {!bookingData.isNewStudent && (
+              <CardContent className="space-y-3">
                   <div className="space-y-3">
                     <div className="relative">
                       <Search
@@ -770,144 +706,6 @@ export default function BookingClient() {
                         </p>
                       )}
                   </div>
-                )}
-
-                {/* New student form */}
-                {bookingData.isNewStudent && (
-                  <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs font-semibold uppercase">
-                          Name *
-                        </Label>
-                        <Input
-                          className="mt-1.5"
-                          placeholder="Full name"
-                          value={bookingData.newStudent.name}
-                          onChange={(e) =>
-                            setBookingData((p) => ({
-                              ...p,
-                              newStudent: {
-                                ...p.newStudent,
-                                name: e.target.value,
-                              },
-                            }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs font-semibold uppercase">
-                          Phone *
-                        </Label>
-                        <Input
-                          className="mt-1.5"
-                          placeholder="10-digit number"
-                          maxLength={10}
-                          value={bookingData.newStudent.phoneNumber}
-                          onChange={(e) => {
-                            const inputValue = e.target.value;
-                            if (/^\d*$/.test(inputValue)) {
-                              setBookingData((p) => ({
-                                ...p,
-                                newStudent: {
-                                  ...p.newStudent,
-                                  phoneNumber: inputValue,
-                                },
-                              }));
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs font-semibold uppercase">
-                        Gender
-                      </Label>
-                      <Select
-                        value={bookingData.newStudent.gender}
-                        onValueChange={(v) =>
-                          setBookingData((p) => ({
-                            ...p,
-                            newStudent: { ...p.newStudent, gender: v },
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="mt-1.5 w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="MALE">Male</SelectItem>
-                          <SelectItem value="FEMALE">Female</SelectItem>
-                          <SelectItem value="OTHER">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs font-semibold uppercase">
-                        Address (optional)
-                      </Label>
-                      <Textarea
-                        className="mt-1.5 resize-none"
-                        rows={2}
-                        placeholder="Area / locality"
-                        value={bookingData.newStudent.address}
-                        onChange={(e) =>
-                          setBookingData((p) => ({
-                            ...p,
-                            newStudent: {
-                              ...p.newStudent,
-                              address: e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs font-semibold uppercase">
-                          Father Name *
-                        </Label>
-                        <Input
-                          className="mt-1.5"
-                          placeholder="Father's name"
-                          value={bookingData.newStudent.fatherName}
-                          onChange={(e) =>
-                            setBookingData((p) => ({
-                              ...p,
-                              newStudent: {
-                                ...p.newStudent,
-                                fatherName: e.target.value,
-                              },
-                            }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs font-semibold uppercase">
-                          Father Phone *
-                        </Label>
-                        <Input
-                          className="mt-1.5"
-                          placeholder="10-digit number"
-                          maxLength={10}
-                          value={bookingData.newStudent.fatherPhone}
-                          onChange={(e) => {
-                            const inputValue = e.target.value;
-                            if (/^\d*$/.test(inputValue)) {
-                              setBookingData((p) => ({
-                                ...p,
-                                newStudent: {
-                                  ...p.newStudent,
-                                  fatherPhone: inputValue,
-                                },
-                              }));
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -944,7 +742,7 @@ export default function BookingClient() {
                   </p>
                   {selectedShiftData.length === 0 ? (
                     <p className="text-muted-foreground italic text-xs">
-                      None selected
+                      ⬆️ Select shifts above
                     </p>
                   ) : (
                     selectedShiftData.map((s) => (
@@ -953,6 +751,20 @@ export default function BookingClient() {
                         <span className="font-medium">₹{s.price}</span>
                       </div>
                     ))
+                  )}
+                </div>
+                <div className="h-px bg-border" />
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase font-medium mb-1">
+                    Selected Student
+                  </p>
+                  {bookingData.selectedStudent ? (
+                    <div>
+                      <p className="font-semibold text-sm">{bookingData.selectedStudent.name}</p>
+                      <p className="text-xs text-muted-foreground">#{bookingData.selectedStudent.memberId}</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground italic text-xs">⬆️ Search & select above</p>
                   )}
                 </div>
                 <div className="h-px bg-border" />
@@ -974,13 +786,16 @@ export default function BookingClient() {
                   onClick={() => {
                     setError("");
                     if (!canProceed()) {
-                      setError(
-                        "Select at least one shift and a student to continue",
-                      );
+                      if (bookingData.selectedShifts.length === 0) {
+                        setError("Select at least one shift");
+                      } else {
+                        setError("Select a student");
+                      }
                       return;
                     }
                     setStep(2);
                   }}
+                  disabled={!canProceed()}
                   className="w-full gap-2"
                 >
                   Review Booking <ArrowRight size={15} />
@@ -1074,28 +889,19 @@ export default function BookingClient() {
                 {[
                   [
                     "Name",
-                    bookingData.isNewStudent
-                      ? bookingData.newStudent.name
-                      : bookingData.selectedStudent?.name,
+                    bookingData.selectedStudent?.name,
                   ],
                   [
                     "Phone",
-                    bookingData.isNewStudent
-                      ? bookingData.newStudent.phoneNumber
-                      : bookingData.selectedStudent?.phoneNumber,
+                    bookingData.selectedStudent?.phoneNumber,
                   ],
                   [
                     "Gender",
-                    (bookingData.isNewStudent
-                      ? bookingData.newStudent.gender
-                      : bookingData.selectedStudent?.gender
-                    )?.toLowerCase(),
+                    bookingData.selectedStudent?.gender?.toLowerCase(),
                   ],
                   [
                     "Member ID",
-                    bookingData.isNewStudent
-                      ? "Auto-assigned"
-                      : `#${bookingData.selectedStudent?.memberId}`,
+                    `#${bookingData.selectedStudent?.memberId}`,
                   ],
                 ].map(([label, value]) => (
                   <div key={label}>

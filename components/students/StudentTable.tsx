@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 import {
   Trash2,
   Edit2,
@@ -11,7 +11,6 @@ import {
   InboxIcon,
   Phone,
   RefreshCw,
-  KeyRound,
   AlertTriangle,
   LucideIcon,
   Plus,
@@ -20,6 +19,16 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  flexRender,
+  ColumnDef,
+} from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -45,10 +54,39 @@ import { useRouter } from "next/navigation";
 import { sendWhatsAppMessage } from "@/lib/sendMsg";
 import { WhatsappIcon } from "../icons/SocialIcons";
 import Image from "next/image";
+import { Input } from "@/components/ui/input";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface Subscription {
+  id: string;
+  totalAmount: number;
+  discount: number;
+  amountPaid: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
+interface Student {
+  id: string;
+  memberId: number | null;
+  name: string;
+  gender: string;
+  aadhaarNumber: string | null;
+  phoneNumber: string;
+  fatherName: string;
+  fatherPhone: string;
+  temporaryAddress: string | null;
+  address: string | null;
+  lockerNumber: number | null;
+  profileImageUrl: string | null;
+  subscriptions: Subscription[];
+}
 
 interface ReceiptData {
   studentName: string;
-  memberId: string | null;
+  memberId: string | number | null;
   daysLeft: number;
   dues: number;
   totalAmount: number;
@@ -58,8 +96,6 @@ interface ReceiptData {
   endDateStr: string;
 }
 
-type SubscriptionStatus = "EXPIRED" | "EXPIRING_SOON" | "ACTIVE";
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const formatIndianDate = (dateString: string): string =>
@@ -68,18 +104,6 @@ const formatIndianDate = (dateString: string): string =>
     month: "short",
     year: "numeric",
   });
-
-const getSubscriptionStatus = (daysLeft: number): SubscriptionStatus => {
-  if (daysLeft < 0) return "EXPIRED";
-  if (daysLeft <= 3) return "EXPIRING_SOON";
-  return "ACTIVE";
-};
-
-const STATUS_DISPLAY: Record<SubscriptionStatus, string> = {
-  EXPIRED: "EXPIRED",
-  EXPIRING_SOON: "EXPIRING SOON",
-  ACTIVE: "ACTIVE",
-};
 
 const DIVIDER = "─────────────────────────────";
 
@@ -107,8 +131,6 @@ const generateWhatsAppReceipt = ({
   const startDate = formatIndianDate(startDateStr);
   const endDate = formatIndianDate(endDateStr);
   const memberIdText = memberId ?? "Pending";
-  const status = getSubscriptionStatus(daysLeft);
-  const statusText = STATUS_DISPLAY[status];
   const daysDisplay = Math.max(0, daysLeft);
   const finalAmount = totalAmount - discount;
   const alert = buildAlert(dues, daysLeft);
@@ -119,7 +141,6 @@ const generateWhatsAppReceipt = ({
     DIVIDER,
     `Name           : ${studentName}`,
     `Member ID      : ${memberIdText}`,
-    `Status         : ${statusText}`,
     `Start Date     : ${startDate}`,
     `End Date       : ${endDate}`,
     `Days Remaining : ${daysDisplay} days`,
@@ -140,78 +161,41 @@ const generateWhatsAppReceipt = ({
   return lines.join("\n");
 };
 
-// Define the type based on your Prisma Schema
-interface Subscription {
-  id: string;
-  totalAmount: number;
-  discount: number;
-  amountPaid: number;
-  startDate: string;
-  endDate: string;
-  status: string;
-}
-
-interface Student {
-  id: string;
-  memberId: string | null;
-  name: string;
-  gender: string;
-  adhaarNumber: string | null;
-  phoneNumber: string;
-  fatherName: string;
-  fatherPhone: string;
-  temporaryAddress: string | null;
-  address: string | null;
-  lockerNumber: number | null;
-  profileImageUrl: string | null;
-  subscriptions: Subscription[];
-}
-
 export default function StudentTable() {
   const router = useRouter();
-  const [students, setStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "expired" | "none"
   >("all");
-  const [loading, setLoading] = useState(true);
-
-  // Action States
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  const fetchStudents = async () => {
-    try {
-      setLoading(true);
+  // Fetch students using React Query
+  const { data: studentsData, isLoading } = useQuery({
+    queryKey: ["students"],
+    queryFn: async () => {
       const response = await fetch("/api/students");
       const result = await response.json();
-      if (result.success) setStudents(result.data);
-    } catch (error) {
-      console.error("Failed to fetch students:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return result.success ? result.data : [];
+    },
+  });
 
+  const students = useMemo(() => studentsData || [], [studentsData]);
+
+  // Filter students
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
+    return students.filter((s: Student) => {
       const searchLower = searchTerm.toLowerCase();
-      
-      // FIXED: Added .toString() to s.memberId before calling .toLowerCase()
+
       const matchesSearch =
         s.name.toLowerCase().includes(searchLower) ||
         s.phoneNumber.includes(searchTerm) ||
-        (s.memberId && s.memberId.toString().toLowerCase().includes(searchLower)) ||
+        (s.memberId && s.memberId.toString().includes(searchTerm)) ||
         (s.lockerNumber && s.lockerNumber.toString() === searchTerm);
 
       if (!matchesSearch) return false;
 
-      // Apply status filter
       if (statusFilter === "all") return true;
 
       const latestSub = s.subscriptions[0];
@@ -219,7 +203,7 @@ export default function StudentTable() {
 
       const daysLeft = differenceInDays(
         new Date(latestSub.endDate),
-        new Date(),
+        new Date()
       );
       const isExpired = latestSub.status !== "ACTIVE" || daysLeft < 0;
 
@@ -231,6 +215,26 @@ export default function StudentTable() {
     });
   }, [students, searchTerm, statusFilter]);
 
+  // Calculate stats
+  const stats = useMemo(() => {
+    const total = students.length;
+    const active = students.filter((s: Student) => {
+      const sub = s.subscriptions[0];
+      if (!sub) return false;
+      const daysLeft = differenceInDays(new Date(sub.endDate), new Date());
+      return sub.status === "ACTIVE" && daysLeft >= 0;
+    }).length;
+    const expired = students.filter((s: Student) => {
+      const sub = s.subscriptions[0];
+      if (!sub) return false;
+      const daysLeft = differenceInDays(new Date(sub.endDate), new Date());
+      return sub.status !== "ACTIVE" || daysLeft < 0;
+    }).length;
+    const noSub = total - active - expired;
+    return { total, active, expired, noSub };
+  }, [students]);
+
+  // Get subscription status with colors
   const getSubStatus = (subs: Subscription[]) => {
     if (!subs || subs.length === 0)
       return {
@@ -238,7 +242,6 @@ export default function StudentTable() {
         color: "bg-muted text-muted-foreground border-border",
       };
 
-    // Assuming the API returns the most recent subscription first
     const latestSub = subs[0];
     const daysLeft = differenceInDays(new Date(latestSub.endDate), new Date());
 
@@ -262,25 +265,7 @@ export default function StudentTable() {
     };
   };
 
-  // Calculate stats
-  const stats = useMemo(() => {
-    const total = students.length;
-    const active = students.filter((s) => {
-      const sub = s.subscriptions[0];
-      if (!sub) return false;
-      const daysLeft = differenceInDays(new Date(sub.endDate), new Date());
-      return sub.status === "ACTIVE" && daysLeft >= 0;
-    }).length;
-    const expired = students.filter((s) => {
-      const sub = s.subscriptions[0];
-      if (!sub) return false;
-      const daysLeft = differenceInDays(new Date(sub.endDate), new Date());
-      return sub.status !== "ACTIVE" || daysLeft < 0;
-    }).length;
-    const noSub = total - active - expired;
-    return { total, active, expired, noSub };
-  }, [students]);
-
+  // Delete student
   const confirmDelete = async () => {
     if (!studentToDelete) return;
     try {
@@ -289,8 +274,9 @@ export default function StudentTable() {
         method: "DELETE",
       });
       if (res.ok) {
-        setStudents(students.filter((s) => s.id !== studentToDelete));
         toast.success("Student deleted successfully");
+        // Refetch students
+        window.location.reload();
       }
     } catch (error) {
       console.error("Failed to delete student:", error);
@@ -302,311 +288,454 @@ export default function StudentTable() {
     }
   };
 
+  // Define columns for TanStack Table
+  const columns: ColumnDef<Student>[] = [
+    {
+      id: "index",
+      header: "#",
+      cell: ({ row }) => row.index + 1,
+      size: 40,
+    },
+    {
+      id: "memberId",
+      header: "Member ID",
+      accessorKey: "memberId",
+      cell: ({ row }) =>
+        row.original.memberId ? (
+          <Link
+            href={`/student/${row.original.id}`}
+            className="font-mono text-xs font-bold text-primary hover:underline"
+          >
+            {formatMemberId(row.original.memberId)}
+          </Link>
+        ) : (
+          <span className="text-muted-foreground text-xs italic">Pending</span>
+        ),
+    },
+    {
+      id: "student",
+      header: "Student",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Image
+            src={row.original.profileImageUrl || "/default-avatar.png"}
+            alt={row.original.name}
+            width={40}
+            height={40}
+            className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border border-border shrink-0"
+          />
+          <div className="min-w-0">
+            <p className="font-bold text-foreground capitalize text-xs md:text-sm truncate">
+              {row.original.name}
+            </p>
+            <p className="text-[8px] md:text-[10px] text-muted-foreground">
+              {row.original.gender}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "phone",
+      header: "Phone",
+      accessorKey: "phoneNumber",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1 text-xs">
+          <Phone size={12} className="text-muted-foreground" />
+          <span>{row.original.phoneNumber}</span>
+        </div>
+      ),
+    },
+    {
+      id: "aadhar",
+      header: "Aadhar",
+      accessorKey: "aadhaarNumber",
+      cell: ({ row }) =>
+        row.original.aadhaarNumber ? (
+          <span className="font-mono text-xs text-muted-foreground">
+            {row.original.aadhaarNumber.slice(-4).padStart(12, "*")}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-xs">-</span>
+        ),
+    },
+    {
+      id: "father",
+      header: "Father",
+      cell: ({ row }) => (
+        <div className="text-xs">
+          <p className="font-semibold text-foreground truncate">
+            {row.original.fatherName}
+          </p>
+          <p className="text-muted-foreground flex items-center gap-0.5">
+            <Phone size={10} />
+            {row.original.fatherPhone}
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: "locker",
+      header: "Locker",
+      accessorKey: "lockerNumber",
+      cell: ({ row }) =>
+        row.original.lockerNumber ? (
+          <Badge variant="secondary" className="text-xs">
+            #{row.original.lockerNumber}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-xs">-</span>
+        ),
+    },
+    {
+      id: "expiry",
+      header: "Expiry",
+      cell: ({ row }) => {
+        const latestSub = row.original.subscriptions[0];
+        if (!latestSub)
+          return <span className="text-muted-foreground text-xs">-</span>;
+
+        const daysLeft = differenceInDays(
+          new Date(latestSub.endDate),
+          new Date()
+        );
+        const subStatus = getSubStatus(row.original.subscriptions);
+
+        return (
+          <div className="text-xs">
+            <p className="font-semibold">
+              {format(new Date(latestSub.endDate), "dd MMM yy")}
+            </p>
+            <Badge
+              className={cn(
+                "px-1.5 py-0 mt-0.5 text-xs font-bold border shadow-none",
+                subStatus.color
+              )}
+            >
+              {daysLeft < 0
+                ? `Expired ${Math.abs(daysLeft)}d`
+                : daysLeft <= 3
+                  ? `${daysLeft}d left`
+                  : `Active`}
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
+      id: "dues",
+      header: "Dues",
+      cell: ({ row }) => {
+        const latestSub = row.original.subscriptions[0];
+        if (!latestSub)
+          return <span className="text-muted-foreground text-xs">-</span>;
+
+        const finalAmount = latestSub.totalAmount - (latestSub.discount || 0);
+        const dues = finalAmount - latestSub.amountPaid;
+
+        return (
+          <span className="font-semibold text-amber-600 text-xs">
+            ₹{dues}
+          </span>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-0.5 md:gap-1">
+          {/* SMS */}
+          <ActionBtn
+            icon={Phone}
+            color="text-blue-500 hover:bg-blue-500/10"
+            onClick={() => {
+              const msg = encodeURIComponent(
+                `Hi ${row.original.name}, this is from RK Library.`
+              );
+              window.open(`sms:${row.original.phoneNumber}?body=${msg}`, "_blank");
+            }}
+            title="Send SMS"
+          />
+
+          {/* WhatsApp */}
+          <Button
+            type="button"
+            title="Send WhatsApp"
+            className="p-1.5 rounded-lg transition-colors bg-background border shadow-sm hover:border-transparent text-emerald-500 hover:bg-emerald-500/10 border-emerald-500/20"
+            onClick={() => {
+              const latestSub = row.original.subscriptions[0];
+              if (latestSub) {
+                const daysLeft = differenceInDays(
+                  new Date(latestSub.endDate),
+                  new Date()
+                );
+                const finalAmount = latestSub.totalAmount - (latestSub.discount || 0);
+                const dues = finalAmount - latestSub.amountPaid;
+
+                const message = generateWhatsAppReceipt({
+                  studentName: row.original.name,
+                  memberId: row.original.memberId,
+                  daysLeft,
+                  dues,
+                  totalAmount: latestSub.totalAmount,
+                  discount: latestSub.discount || 0,
+                  amountPaid: latestSub.amountPaid,
+                  startDateStr: latestSub.startDate,
+                  endDateStr: latestSub.endDate,
+                });
+
+                sendWhatsAppMessage(row.original.phoneNumber, message);
+              } else {
+                toast.error("No subscription found");
+              }
+            }}
+          >
+            <WhatsappIcon className="size-3.5" />
+          </Button>
+
+          {/* Renew */}
+          <ActionBtn
+            icon={RefreshCw}
+            color="text-emerald-500 hover:bg-emerald-500/10"
+            onClick={() =>
+              router.push(`/renew/${row.original.subscriptions[0]?.id}`)
+            }
+            title="Renew"
+          />
+
+          {/* Edit */}
+          <ActionBtn
+            icon={Edit2}
+            color="text-blue-500 hover:bg-blue-500/10"
+            onClick={() => router.push(`/student/edit/${row.original.id}`)}
+            title="Edit"
+          />
+
+          {/* Delete */}
+          <ActionBtn
+            icon={Trash2}
+            color="text-destructive hover:bg-destructive/10"
+            onClick={() => {
+              setStudentToDelete(row.original.id);
+              setShowDeleteDialog(true);
+            }}
+            title="Delete"
+          />
+        </div>
+      ),
+    },
+  ];
+
+  // Create table instance
+  const table = useReactTable({
+    data: filteredStudents,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
+  });
+
   return (
-    <div className="flex flex-col h-full bg-card">
+    <div className="flex flex-col h-full bg-card gap-2 md:gap-3">
       {/* Stats Section */}
-      <div className="p-4 md:p-6 border-b border-border bg-linear-to-r from-muted/30 to-transparent">
-        <div className="grid grid-cols-2 gap-2 md:gap-4">
+      <div className="p-2 md:p-4 border-b border-border bg-linear-to-r from-primary/5 via-transparent to-secondary/5 backdrop-blur-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-3">
           <StatCard
             icon={TrendingUp}
             label="Total Students"
             value={stats.total}
-            color="bg-blue-500"
+            color="from-blue-500 to-blue-600"
           />
           <StatCard
             icon={CheckCircle2}
             label="Active"
             value={stats.active}
-            color="bg-emerald-500"
+            color="from-emerald-500 to-emerald-600"
           />
           <StatCard
             icon={AlertCircle}
             label="Expired"
             value={stats.expired}
-            color="bg-destructive"
+            color="from-red-500 to-red-600"
           />
           <StatCard
             icon={Clock}
-            label="No Subscription"
+            label="No Sub"
             value={stats.noSub}
-            color="bg-amber-500"
+            color="from-amber-500 to-amber-600"
           />
         </div>
       </div>
 
       {/* Search & Filters */}
-      <div className="p-3 md:p-6 border-b border-border space-y-3 md:space-y-4 bg-muted/10">
-        <div className="flex flex-col gap-3 md:gap-4">
-          <div className="relative flex-1 group w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <input
-              placeholder="Search..."
+      <div className="p-2 md:p-4 border-b border-border space-y-2.5 md:space-y-3 bg-linear-to-b from-muted/20 via-muted/10 to-transparent">
+        {/* Search Bar */}
+        <div className="flex flex-col md:flex-row gap-2 md:gap-2.5 items-stretch md:items-center">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground group-focus-within:text-primary transition-colors duration-200" />
+            <Input
+              placeholder="Search by name, phone, member ID, locker..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-10 md:h-11 w-full text-sm bg-background border border-border rounded-lg md:rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all"
+              className="pl-9 h-9 md:h-10 w-full text-xs md:text-sm bg-background border-2 border-border rounded-lg md:rounded-lg focus:border-primary transition-all duration-200 shadow-sm focus:shadow-md focus:shadow-primary/10"
             />
           </div>
+
           <Button
             onClick={() => router.push("/student/create")}
             size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg md:rounded-xl w-full md:w-auto"
+            className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary rounded-lg h-9 md:h-10 px-4 md:px-6 font-medium text-xs md:text-sm transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/15"
           >
-            <Plus className="size-4 mr-1 md:mr-2" />
-            <span className="hidden md:inline">Add Student</span>
-            <span className="md:hidden">Add</span>
+            <Plus className="size-3.5 mr-1.5" />
+            <span className="hidden sm:inline">Add</span>
+            <span className="sm:hidden">+</span>
           </Button>
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex gap-1.5 md:gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none']">
+        <div className="flex gap-1.5 md:gap-2 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:h-0.5 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-track]:bg-transparent">
           {[
             { id: "all", label: "All", icon: null },
             { id: "active", label: "Active", icon: CheckCircle2 },
             { id: "expired", label: "Expired", icon: AlertTriangle },
-            { id: "none", label: "No Subscription", icon: Clock },
+            { id: "none", label: "No Sub", icon: Clock },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setStatusFilter(tab.id as "all" | "active" | "expired" | "none")}
+              onClick={() => setStatusFilter(tab.id as any)}
               className={cn(
-                "px-2.5 md:px-4 py-1.5 md:py-2 text-sm rounded-lg whitespace-nowrap transition-all border font-medium flex items-center gap-1 md:gap-2",
+                "px-2.5 md:px-4 py-1.5 md:py-1.75 text-[11px] md:text-xs rounded-md md:rounded-lg whitespace-nowrap transition-all duration-200 border font-medium flex items-center gap-1 md:gap-1.5 group relative",
                 statusFilter === tab.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "bg-linear-to-r from-primary to-primary/90 text-primary-foreground border-primary shadow-md shadow-primary/15"
+                  : "bg-background border-border text-muted-foreground hover:bg-muted hover:border-muted-foreground/30 hover:text-foreground"
               )}
             >
-              {tab.icon && <tab.icon className="hidden md:inline size-4" />}
-              <span className="text-xs md:text-sm">{tab.label}</span>
+              {tab.icon && <tab.icon className="size-3 md:size-3.5 transition-transform group-hover:scale-110" />}
+              <span>{tab.label}</span>
+              {statusFilter === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-white to-transparent opacity-50 rounded-b" />
+              )}
             </button>
           ))}
         </div>
       </div>
 
       {/* Table Content */}
-      <div className="w-full overflow-x-auto">
-        {loading ? (
-          <div className="flex flex-col justify-center items-center h-80 gap-4">
-            <Loader2 className="animate-spin text-primary size-10" />
-            <p className="text-sm text-muted-foreground font-medium animate-pulse">
-              Syncing students...
-            </p>
+      <div className="flex-1 overflow-x-auto">
+        {isLoading ? (
+          <div className="flex flex-col justify-center items-center h-64 gap-3">
+            <div className="relative">
+              <Loader2 className="animate-spin text-primary size-8" />
+              <div className="absolute inset-0 animate-pulse bg-primary/20 rounded-full blur-xl" />
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground font-medium">
+                Loading students...
+              </p>
+            </div>
           </div>
         ) : filteredStudents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
-            <div className="size-16 rounded-3xl bg-muted/50 border border-border flex items-center justify-center mb-4">
-              <InboxIcon className="size-8 text-muted-foreground/50" />
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+            <div className="size-14 rounded-full bg-linear-to-br from-muted to-muted/50 border border-border flex items-center justify-center mb-3 shadow-md">
+              <InboxIcon className="size-7 text-muted-foreground/60" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">
+            <h3 className="text-base font-bold text-foreground">
               No students found
             </h3>
-            <p className="text-muted-foreground max-w-sm mt-1">
-              Try adjusting your search terms.
+            <p className="text-muted-foreground max-w-sm mt-1 text-xs">
+              Try adjusting your search criteria.
             </p>
           </div>
         ) : (
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="font-bold text-muted-foreground h-10 md:h-12 pl-3 md:pl-6 w-8 md:w-16 text-xs md:text-sm">
-                  #
-                </TableHead>
-                <TableHead className="hidden lg:table-cell font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
-                  Member ID
-                </TableHead>
-                <TableHead className="font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
-                  Student
-                </TableHead>
-                <TableHead className="hidden md:table-cell font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
-                  Contact
-                </TableHead>
-                <TableHead className="hidden xl:table-cell font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
-                  Locker
-                </TableHead>
-                <TableHead className="hidden lg:table-cell font-bold text-muted-foreground h-10 md:h-12 text-xs md:text-sm">
-                  Subscription
-                </TableHead>
-                <TableHead className="hidden md:table-cell font-bold text-muted-foreground h-10 md:h-12 w-16 md:w-24 text-center text-xs md:text-sm">
-                  Dues
-                </TableHead>
-                <TableHead className="font-bold text-muted-foreground h-10 md:h-12 text-right pr-2 md:pr-6 text-xs md:text-sm">
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredStudents.map((student, idx) => {
-                const subStatus = getSubStatus(student.subscriptions);
-                return (
-                  <TableRow
-                    key={student.id}
-                    className="border-border hover:bg-muted/50 transition-colors group"
-                  >
-                    <TableCell className="pl-3 md:pl-6 font-medium text-muted-foreground text-xs">
-                      {idx + 1}
-                    </TableCell>
-
-                    {/* Clickable Member ID - Hidden on Mobile */}
-                    <TableCell className="hidden lg:table-cell">
-                      {student.memberId ? (
-                        <Link
-                          href={`/student/${student.id}`}
-                          className="font-mono text-xs md:text-sm font-bold text-primary hover:underline"
-                        >
-                          {formatMemberId(Number(student.memberId))}
-                        </Link>
-                      ) : (
-                        <span className="text-muted-foreground text-xs italic">
-                          Pending
-                        </span>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="py-2 md:py-3 pr-1 md:pr-2">
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <Image 
-                          src={student.profileImageUrl || "/default-avatar.png"}
-                          alt={student.name}
-                          width={40} 
-                          height={40}
-                          className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border border-border shrink-0" 
-                        />
-                        <div className="min-w-0">
-                          <p className="font-bold text-foreground capitalize text-xs md:text-sm truncate">
-                            {student.name}
-                          </p>
-                          <p className="text-[8px] md:text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                            {student.gender}
-                          </p>
-                          <p className="text-[8px] md:hidden text-muted-foreground font-medium">
-                            {student.phoneNumber}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="hidden md:table-cell pl-1 md:pl-2">
-                      <div className="flex items-center gap-1 md:gap-2 text-foreground">
-                        <Phone size={12} className="text-muted-foreground hidden md:block" />
-                        <span className="font-medium text-xs md:text-sm">
-                          {student.phoneNumber}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="hidden xl:table-cell">
-                      {student.lockerNumber ? (
-                        <div className="flex items-center gap-1 text-foreground bg-muted w-max px-2 md:px-2.5 py-0.5 md:py-1 rounded-md border border-border">
-                          <KeyRound
-                            size={10}
-                            className="text-muted-foreground"
-                          />
-                          <span className="font-mono text-xs md:text-sm font-bold">
-                            {student.lockerNumber}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">-</span>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge
-                        className={cn(
-                          "px-2 md:px-2.5 py-0.5 md:py-1 rounded-full font-bold border shadow-none text-xs md:text-sm",
-                          subStatus.color,
-                        )}
+          <div className="overflow-x-auto">
+            <Table className="min-w-full">
+              <TableHeader className="bg-linear-to-r from-muted/40 via-muted/30 to-muted/40 border-b-2 border-primary/10">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="border-b border-border hover:bg-transparent">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="font-bold text-primary/70 h-9 md:h-10 px-1.5 md:px-3 text-[10px] md:text-xs whitespace-nowrap uppercase tracking-tight"
                       >
-                        {subStatus.label}
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell className="hidden md:table-cell text-center text-xs md:text-sm">
-                      {student.subscriptions[0]
-                        ? `Rs. ${(student.subscriptions[0].totalAmount - (student.subscriptions[0].discount || 0)) - student.subscriptions[0].amountPaid}`
-                        : "-"}
-                    </TableCell>
-
-                    <TableCell className="pr-2 md:pr-6 text-right">
-                      <div className="flex items-center justify-end gap-0.5 md:gap-1">
-                        {/* WhatsApp Message Button */}
-                        <Button
-                          type="button"
-                          title="Send WhatsApp Message"
-                          className="p-1.5 md:p-2 rounded-lg transition-colors bg-background border shadow-sm hover:border-transparent text-emerald-500 hover:bg-emerald-500/10 border-emerald-500/20"
-                          onClick={() => {
-                            const latestSub = student.subscriptions[0];
-                            if (latestSub) {
-                              const daysLeft = differenceInDays(
-                                new Date(latestSub.endDate),
-                                new Date(),
-                              );
-                              const finalAmount = latestSub.totalAmount - (latestSub.discount || 0);
-                              const dues = finalAmount - latestSub.amountPaid;
-
-                              const message = generateWhatsAppReceipt({
-                                studentName: student.name,
-                                memberId: student.memberId,
-                                daysLeft,
-                                dues,
-                                totalAmount: latestSub.totalAmount,
-                                discount: latestSub.discount || 0,
-                                amountPaid: latestSub.amountPaid,
-                                startDateStr: latestSub.startDate,
-                                endDateStr: latestSub.endDate,
-                              });
-
-                              sendWhatsAppMessage(student.phoneNumber, message);
-                            } else {
-                              toast.error(
-                                "No subscription found for this student",
-                              );
-                            }
-                          }}
-                        >
-                          <WhatsappIcon className="size-3.5 md:size-4" />
-                        </Button>
-
-                        {/* Renew Subscription Button */}
-                        <ActionBtn
-                          icon={RefreshCw}
-                          color="text-emerald-500 hover:bg-emerald-500/10 border-emerald-500/20"
-                          onClick={() =>
-                            router.push(
-                              `/renew/${student.subscriptions[0]?.id}`,
-                            )
-                          }
-                          title="Renew Subscription"
-                        />
-
-                        {/* Edit Button */}
-                        <ActionBtn
-                          icon={Edit2}
-                          color="text-blue-500 hover:bg-blue-500/10"
-                          onClick={() => router.push(`/student/edit/${student.id}`)}
-                          title="Edit Student"
-                        />
-
-                        {/* Delete Button */}
-                        <ActionBtn
-                          icon={Trash2}
-                          color="text-destructive hover:bg-destructive/10"
-                          onClick={() => {
-                            setStudentToDelete(student.id);
-                            setShowDeleteDialog(true);
-                          }}
-                          title="Delete"
-                        />
-                      </div>
-                    </TableCell>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="border-border hover:bg-primary/5 transition-all duration-200 group hover:shadow-sm"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="px-1.5 md:px-3 py-2 text-[11px] md:text-xs whitespace-nowrap group-hover:text-foreground transition-colors"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Pagination */}
+      {filteredStudents.length > 0 && (
+        <div className="px-2 md:px-4 py-2 border-t border-border bg-linear-to-r from-muted/20 via-muted/10 to-muted/20 flex items-center justify-between text-xs">
+          <div className="font-medium text-muted-foreground">
+            <span className="text-foreground font-semibold">{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-{Math.min(
+              (table.getState().pagination.pageIndex + 1) *
+                table.getState().pagination.pageSize,
+              filteredStudents.length
+            )}</span>
+            <span className="text-muted-foreground"> of </span>
+            <span className="text-foreground font-semibold">{filteredStudents.length}</span>
+          </div>
+          <div className="flex gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="text-xs font-medium rounded-md px-2.5 py-1 h-auto hover:bg-primary/10 hover:text-primary transition-all duration-200"
+            >
+              ←
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="text-xs font-medium rounded-md px-2.5 py-1 h-auto hover:bg-primary/10 hover:text-primary transition-all duration-200"
+            >
+              →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="sm:max-w-md bg-background border-border">
           <DialogHeader>
@@ -615,11 +744,10 @@ export default function StudentTable() {
             </DialogTitle>
             <DialogDescription className="text-muted-foreground mt-2">
               Are you sure you want to delete this student? All their
-              subscription history and associated records will be permanently
-              removed.
+              subscription history and records will be permanently removed.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+          <DialogFooter className="gap-2 mt-4">
             <Button
               variant="outline"
               onClick={() => setShowDeleteDialog(false)}
@@ -637,7 +765,7 @@ export default function StudentTable() {
               ) : (
                 <Trash2 className="size-4 mr-2" />
               )}
-              {deleting ? "Deleting..." : "Delete Student"}
+              {deleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -645,6 +773,8 @@ export default function StudentTable() {
     </div>
   );
 }
+
+// ─── Helper Components ───────────────────────────────────────────────────────
 
 interface ActionBtnProps {
   icon: LucideIcon;
@@ -659,11 +789,11 @@ function ActionBtn({ icon: Icon, color, onClick, title }: ActionBtnProps) {
       onClick={onClick}
       title={title}
       className={cn(
-        "p-1.5 md:p-2 rounded-lg transition-colors bg-background border border-border shadow-sm hover:border-transparent",
-        color,
+        "p-1 rounded-md transition-colors bg-background border border-border shadow-sm hover:border-transparent text-xs",
+        color
       )}
     >
-      <Icon size={14} className="md:size-4" />
+      <Icon size={12} />
     </button>
   );
 }
@@ -677,13 +807,28 @@ interface StatCardProps {
 
 function StatCard({ icon: Icon, label, value, color }: StatCardProps) {
   return (
-    <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-background hover:bg-muted/30 transition-colors">
-      <div className={cn("p-2.5 rounded-lg text-white", color)}>
-        <Icon className="size-5" />
-      </div>
-      <div className="flex-1">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold text-foreground">{value}</p>
+    <div className="group relative overflow-hidden rounded-lg border border-border bg-linear-to-br from-background to-muted/20 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
+      {/* Gradient overlay on hover */}
+      <div className="absolute inset-0 bg-linear-to-br from-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:to-primary/5 transition-all duration-300" />
+      
+      <div className="relative flex items-center gap-2 md:gap-3 p-2.5 md:p-3">
+        {/* Icon background */}
+        <div className={cn(
+          "p-1.5 md:p-2 rounded-md text-white shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-md",
+          `bg-linear-to-br ${color}`
+        )}>
+          <Icon className="size-3 md:size-4" />
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-tight leading-tight">
+            {label}
+          </p>
+          <p className="text-base md:text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-300">
+            {value}
+          </p>
+        </div>
       </div>
     </div>
   );

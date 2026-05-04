@@ -72,21 +72,6 @@ export async function GET() {
           },
         },
       },
-      select: {
-        id: true,
-        memberId: true,
-        name: true,
-        gender: true,
-        phoneNumber: true,
-        aadhaarNumber: true,
-        fatherName: true,
-        fatherPhone: true,
-        address: true,
-        temporaryAddress: true,
-        lockerNumber: true,
-        profileImageUrl: true,
-        subscriptions: true,
-      },
     });
 
     return NextResponse.json({ success: true, data: students });
