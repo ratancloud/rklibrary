@@ -518,7 +518,8 @@ export default function StudentProfileClient() {
               </div>
 
               {/* Right: Actions */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
+              {/* FIXED: Changed from grid to flex so remaining buttons align naturally to the left */}
+              <div className="flex flex-wrap items-center sm:justify-end gap-2 shrink-0">
                 {student.aadhaarFrontUrl && (
                   <Button
                     size="sm"
