@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +18,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Calendar,
   Phone,
@@ -37,7 +39,9 @@ import {
   Layers,
   BadgeCheck,
   Ban,
-} from 'lucide-react';
+  AlertTriangle,
+  FileText,
+} from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -45,9 +49,10 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/breadcrumb";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { DocumentPreviewDialog } from "@/components/students/DocumentPreviewDialog";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -60,6 +65,12 @@ interface StudentData {
   lockerNumber: number | null;
   memberId: number | null;
   createdAt: string;
+  profileImageUrl: string | null;
+  profileImageId: string | undefined;
+  aadhaarFrontUrl: string | null;
+  aadhaarFrontId: string | undefined;
+  aadhaarBackUrl: string | null;
+  aadhaarBackId: string | undefined;
   subscriptions: SubscriptionData[];
   assignments: AssignmentData[];
 }
@@ -77,7 +88,7 @@ interface SubscriptionData {
   totalAmount: number;
   discount: number;
   amountPaid: number;
-  status: 'ACTIVE' | 'EXPIRED' | 'UPCOMING';
+  status: "ACTIVE" | "EXPIRED" | "UPCOMING";
   floorName: string;
   seatNo: number;
   shiftName: string[];
@@ -106,13 +117,13 @@ function UpdateDuesDialog({
 }: UpdateDuesDialogProps) {
   const finalAmount = subscription.totalAmount - (subscription.discount || 0);
   const dues = finalAmount - subscription.amountPaid;
-  const [amount, setAmount] = useState<string>('');
+  const [amount, setAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     const parsed = parseFloat(amount);
     if (!parsed || parsed <= 0) {
-      toast.error('Enter a valid amount');
+      toast.error("Enter a valid amount");
       return;
     }
     if (parsed > dues) {
@@ -125,23 +136,23 @@ function UpdateDuesDialog({
       const res = await fetch(
         `/api/students/${studentId}/subscriptions/${subscription.id}/dues`,
         {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ amountPaid: parsed }),
-        }
+        },
       );
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.message || 'Failed to update dues');
+        throw new Error(err.message || "Failed to update dues");
       }
 
       toast.success(`₹${parsed} payment recorded successfully`);
-      setAmount('');
+      setAmount("");
       onOpenChange(false);
       onSuccess();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'An error occurred');
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -156,7 +167,7 @@ function UpdateDuesDialog({
             Record Payment
           </DialogTitle>
           <DialogDescription>
-            Clear outstanding dues for Seat #{subscription.seatNo} —{' '}
+            Clear outstanding dues for Seat #{subscription.seatNo} —{" "}
             {subscription.floorName}
           </DialogDescription>
         </DialogHeader>
@@ -235,7 +246,7 @@ function UpdateDuesDialog({
             className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
           >
             <CheckCircle2 className="size-4" />
-            {loading ? 'Recording...' : 'Record Payment'}
+            {loading ? "Recording..." : "Record Payment"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -251,17 +262,17 @@ function getDaysLeft(endDate: string) {
   return Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-function StatusBadge({ status }: { status: SubscriptionData['status'] }) {
+function StatusBadge({ status }: { status: SubscriptionData["status"] }) {
   const map = {
-    ACTIVE: 'bg-emerald-100 text-emerald-700 border-emerald-300',
-    EXPIRED: 'bg-red-100 text-red-700 border-red-300',
-    UPCOMING: 'bg-blue-100 text-blue-700 border-blue-300',
+    ACTIVE: "bg-emerald-100 text-emerald-700 border-emerald-300",
+    EXPIRED: "bg-red-100 text-red-700 border-red-300",
+    UPCOMING: "bg-blue-100 text-blue-700 border-blue-300",
   };
   return (
     <span
       className={cn(
-        'inline-flex items-center text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border',
-        map[status]
+        "inline-flex items-center text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border",
+        map[status],
       )}
     >
       {status}
@@ -274,20 +285,25 @@ function StatusBadge({ status }: { status: SubscriptionData['status'] }) {
 export default function StudentProfileClient() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const studentId = params?.id as string;
 
   const [data, setData] = useState<StudentProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [duesDialog, setDuesDialog] = useState<SubscriptionData | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState<string>("");
 
   const fetchStudentData = useCallback(async () => {
     if (!studentId) return;
     try {
       setLoading(true);
       const res = await fetch(`/api/students/${studentId}`);
-      if (!res.ok) throw new Error('Failed to fetch student data');
+      if (!res.ok) throw new Error("Failed to fetch student data");
       const result = await res.json();
       if (result.success && result.data) {
         const s = result.data;
@@ -301,15 +317,21 @@ export default function StudentProfileClient() {
             lockerNumber: s.lockerNumber,
             memberId: s.memberId,
             createdAt: s.createdAt,
+            profileImageUrl: s.profileImageUrl,
+            profileImageId: s.profileImageId,
+            aadhaarFrontUrl: s.aadhaarFrontUrl,
+            aadhaarFrontId: s.aadhaarFrontId,
+            aadhaarBackUrl: s.aadhaarBackUrl,
+            aadhaarBackId: s.aadhaarBackId,
             subscriptions: s.subscriptions || [],
             assignments: s.assignments || [],
           },
         });
       } else {
-        throw new Error(result.message || 'Failed to fetch student data');
+        throw new Error(result.message || "Failed to fetch student data");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -321,26 +343,47 @@ export default function StudentProfileClient() {
 
   const handleDelete = async () => {
     if (!data?.student.id) return;
-    if (
-      !confirm(
-        'Are you sure you want to delete this student? This action cannot be undone.'
-      )
-    )
-      return;
     try {
       setDeleting(true);
-      const res = await fetch(`/api/students/${data.student.id}`, {
-        method: 'DELETE',
+      const { student } = data;
+      const imageFileIds: string[] = [];
+
+      // Collect all image IDs
+      if (student.profileImageId) imageFileIds.push(student.profileImageId);
+      if (student.aadhaarFrontId) imageFileIds.push(student.aadhaarFrontId);
+      if (student.aadhaarBackId) imageFileIds.push(student.aadhaarBackId);
+
+      // Delete student from database
+      const res = await fetch(`/api/students/${student.id}`, {
+        method: "DELETE",
       });
-      if (res.ok) {
-        toast.success('Student deleted successfully');
-        router.push('/student');
-      } else {
-        toast.error('Failed to delete student');
+
+      if (!res.ok) {
+        throw new Error("Failed to delete student");
       }
-    } catch {
-      toast.error('An error occurred');
-    } finally {
+
+      // Delete images from ImageKit if any exist
+      if (imageFileIds.length > 0) {
+        await fetch("/api/imagekit/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileIds: imageFileIds }),
+        }).catch((err) =>
+          console.error("Failed to delete student images:", err),
+        );
+      }
+
+      // Invalidate students query
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+
+      toast.success("Student and associated images deleted successfully");
+      setShowDeleteDialog(false);
+      router.push("/student");
+    } catch (err) {
+      console.error("Failed to delete student:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete student",
+      );
       setDeleting(false);
     }
   };
@@ -373,27 +416,25 @@ export default function StudentProfileClient() {
     );
 
   const { student } = data;
-  const activeSub = student.subscriptions.find((s) => s.status === 'ACTIVE');
-  const totalPaid = student.subscriptions.reduce(
-    (a, s) => a + s.amountPaid,
-    0
-  );
+  const activeSub = student.subscriptions.find((s) => s.status === "ACTIVE");
+  const totalPaid = student.subscriptions.reduce((a, s) => a + s.amountPaid, 0);
   const totalDues = student.subscriptions.reduce(
-    (a, s) => a + ((s.totalAmount - (s.discount || 0)) - s.amountPaid),
-    0
+    (a, s) => a + (s.totalAmount - (s.discount || 0) - s.amountPaid),
+    0,
   );
 
   return (
     <div className="min-h-screen bg-background pb-12">
       <div className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pt-24">
-
         {/* Breadcrumb */}
         <div className="mb-5">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href="/"><Home className="w-4 h-4" /></Link>
+                  <Link href="/">
+                    <Home className="w-4 h-4" />
+                  </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
@@ -417,7 +458,7 @@ export default function StudentProfileClient() {
             className="absolute inset-0 opacity-[0.04]"
             style={{
               backgroundImage:
-                'repeating-linear-gradient(0deg,#fff 0,#fff 1px,transparent 1px,transparent 40px),repeating-linear-gradient(90deg,#fff 0,#fff 1px,transparent 1px,transparent 40px)',
+                "repeating-linear-gradient(0deg,#fff 0,#fff 1px,transparent 1px,transparent 40px),repeating-linear-gradient(90deg,#fff 0,#fff 1px,transparent 1px,transparent 40px)",
             }}
           />
 
@@ -426,9 +467,20 @@ export default function StudentProfileClient() {
               {/* Left: Identity */}
               <div className="flex items-start gap-4">
                 {/* Avatar */}
-                <div className="size-14 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 text-2xl font-bold text-white backdrop-blur-sm">
-                  {student.name.charAt(0).toUpperCase()}
-                </div>
+                {student.profileImageUrl ? (
+                  <div className="relative size-14 rounded-full border-2 border-white/30 flex items-center justify-center shrink-0 overflow-hidden bg-white/10 backdrop-blur-sm shadow-lg">
+                    <Image
+                      src={student.profileImageUrl}
+                      alt={student.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="size-14 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center shrink-0 text-xl font-bold text-white backdrop-blur-sm">
+                    {student.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <h1 className="text-xl font-bold tracking-tight">
@@ -449,7 +501,7 @@ export default function StudentProfileClient() {
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/60">
                     <span className="flex items-center gap-1.5">
                       <BadgeCheck className="size-3.5 text-white/40" />
-                      ID: {student.memberId ?? 'Pending'}
+                      ID: {student.memberId ?? "Pending"}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Phone className="size-3.5 text-white/40" />
@@ -466,7 +518,37 @@ export default function StudentProfileClient() {
               </div>
 
               {/* Right: Actions */}
-              <div className="flex gap-2 shrink-0">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
+                {student.aadhaarFrontUrl && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setPreviewImage(student.aadhaarFrontUrl);
+                      setPreviewTitle("Aadhaar Documents");
+                      setPreviewOpen(true);
+                    }}
+                    className="gap-1.5 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
+                  >
+                    <FileText className="size-3.5" />
+                    Adhar Front
+                  </Button>
+                )}
+                {student.aadhaarBackUrl && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setPreviewImage(student.aadhaarBackUrl);
+                      setPreviewTitle("Aadhaar Documents");
+                      setPreviewOpen(true);
+                    }}
+                    className="gap-1.5 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
+                  >
+                    <FileText className="size-3.5" />
+                    Adhar Back
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -478,12 +560,12 @@ export default function StudentProfileClient() {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={handleDelete}
+                  onClick={() => setShowDeleteDialog(true)}
                   disabled={deleting}
                   className="gap-1.5 bg-red-600/80 hover:bg-red-600 text-white border-none"
                 >
                   <Trash2 className="size-3.5" />
-                  {deleting ? 'Deleting…' : 'Delete'}
+                  {deleting ? "Deleting…" : "Delete"}
                 </Button>
               </div>
             </div>
@@ -491,17 +573,27 @@ export default function StudentProfileClient() {
             {/* Stat Strip */}
             <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { label: 'Subscriptions', value: student.subscriptions.length, color: 'text-white' },
                 {
-                  label: 'Active',
-                  value: student.subscriptions.filter((s) => s.status === 'ACTIVE').length,
-                  color: 'text-emerald-400',
+                  label: "Subscriptions",
+                  value: student.subscriptions.length,
+                  color: "text-white",
                 },
-                { label: 'Total Paid', value: `₹${totalPaid}`, color: 'text-white' },
                 {
-                  label: 'Total Dues',
+                  label: "Active",
+                  value: student.subscriptions.filter(
+                    (s) => s.status === "ACTIVE",
+                  ).length,
+                  color: "text-emerald-400",
+                },
+                {
+                  label: "Total Paid",
+                  value: `₹${totalPaid}`,
+                  color: "text-white",
+                },
+                {
+                  label: "Total Dues",
                   value: `₹${totalDues}`,
-                  color: totalDues > 0 ? 'text-amber-400' : 'text-emerald-400',
+                  color: totalDues > 0 ? "text-amber-400" : "text-emerald-400",
                 },
               ].map((stat) => (
                 <div
@@ -511,7 +603,7 @@ export default function StudentProfileClient() {
                   <p className="text-[10px] uppercase font-bold tracking-wider text-white/40 mb-1">
                     {stat.label}
                   </p>
-                  <p className={cn('text-xl font-bold', stat.color)}>
+                  <p className={cn("text-xl font-bold", stat.color)}>
                     {stat.value}
                   </p>
                 </div>
@@ -522,10 +614,8 @@ export default function StudentProfileClient() {
 
         {/* ── Main Grid ───────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
           {/* ── Left Column ─────────────────────────────────────────────── */}
           <div className="space-y-4">
-
             {/* Personal Info */}
             <Card className="border border-border shadow-sm overflow-hidden">
               <CardHeader className="bg-muted/30 border-b border-border px-4 py-3">
@@ -536,11 +626,11 @@ export default function StudentProfileClient() {
               </CardHeader>
               <CardContent className="p-0 divide-y divide-border">
                 {[
-                  { label: 'Full Name', value: student.name, mono: false },
-                  { label: 'Gender', value: student.gender, mono: false },
-                  { label: 'Phone', value: student.phoneNumber, mono: true },
+                  { label: "Full Name", value: student.name, mono: false },
+                  { label: "Gender", value: student.gender, mono: false },
+                  { label: "Phone", value: student.phoneNumber, mono: true },
                   student.address
-                    ? { label: 'Address', value: student.address, mono: false }
+                    ? { label: "Address", value: student.address, mono: false }
                     : null,
                 ]
                   .filter(Boolean)
@@ -551,8 +641,8 @@ export default function StudentProfileClient() {
                       </p>
                       <p
                         className={cn(
-                          'text-sm font-semibold text-foreground capitalize',
-                          row!.mono && 'font-mono'
+                          "text-sm font-semibold text-foreground capitalize",
+                          row!.mono && "font-mono",
                         )}
                       >
                         {row!.value}
@@ -576,16 +666,15 @@ export default function StudentProfileClient() {
                     Member Since
                   </p>
                   <p className="text-sm font-semibold text-foreground">
-                    {new Date(student.createdAt).toLocaleDateString('en-IN', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
+                    {new Date(student.createdAt).toLocaleDateString("en-IN", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
                     })}
                   </p>
                 </div>
               </CardContent>
             </Card>
-
             {/* Stats Card */}
             <Card className="border border-border shadow-sm overflow-hidden">
               <CardHeader className="bg-muted/30 border-b border-border px-4 py-3">
@@ -597,31 +686,37 @@ export default function StudentProfileClient() {
               <CardContent className="p-3 grid grid-cols-2 gap-2">
                 {[
                   {
-                    label: 'Total',
+                    label: "Total",
                     value: student.subscriptions.length,
-                    cls: 'bg-muted/40 border-border text-foreground',
+                    cls: "bg-muted/40 border-border text-foreground",
                   },
                   {
-                    label: 'Active',
-                    value: student.subscriptions.filter((s) => s.status === 'ACTIVE').length,
-                    cls: 'bg-emerald-50 border-emerald-200/60 text-emerald-700',
+                    label: "Active",
+                    value: student.subscriptions.filter(
+                      (s) => s.status === "ACTIVE",
+                    ).length,
+                    cls: "bg-emerald-50 border-emerald-200/60 text-emerald-700",
                   },
                   {
-                    label: 'Expired',
-                    value: student.subscriptions.filter((s) => s.status === 'EXPIRED').length,
-                    cls: 'bg-red-50 border-red-200/60 text-red-700',
+                    label: "Expired",
+                    value: student.subscriptions.filter(
+                      (s) => s.status === "EXPIRED",
+                    ).length,
+                    cls: "bg-red-50 border-red-200/60 text-red-700",
                   },
                   {
-                    label: 'Upcoming',
-                    value: student.subscriptions.filter((s) => s.status === 'UPCOMING').length,
-                    cls: 'bg-blue-50 border-blue-200/60 text-blue-700',
+                    label: "Upcoming",
+                    value: student.subscriptions.filter(
+                      (s) => s.status === "UPCOMING",
+                    ).length,
+                    cls: "bg-blue-50 border-blue-200/60 text-blue-700",
                   },
                 ].map((item) => (
                   <div
                     key={item.label}
                     className={cn(
-                      'rounded-lg border p-3 flex flex-col items-center justify-center text-center',
-                      item.cls
+                      "rounded-lg border p-3 flex flex-col items-center justify-center text-center",
+                      item.cls,
                     )}
                   >
                     <span className="text-2xl font-bold">{item.value}</span>
@@ -636,7 +731,6 @@ export default function StudentProfileClient() {
 
           {/* ── Right Column ────────────────────────────────────────────── */}
           <div className="md:col-span-2 space-y-4">
-
             {/* Active Subscription Card */}
             {activeSub ? (
               <ActiveSubscriptionCard
@@ -679,7 +773,9 @@ export default function StudentProfileClient() {
                 {student.subscriptions.length === 0 ? (
                   <div className="text-center py-8">
                     <AlertCircle className="size-8 text-muted-foreground/30 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No subscriptions yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      No subscriptions yet
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2.5 max-h-96 overflow-y-auto pr-0.5">
@@ -691,12 +787,12 @@ export default function StudentProfileClient() {
                         <div
                           key={sub.id}
                           className={cn(
-                            'group relative rounded-xl border p-3.5 transition-all hover:shadow-md',
-                            sub.status === 'ACTIVE'
-                              ? 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50'
-                              : sub.status === 'UPCOMING'
-                              ? 'border-blue-200 bg-blue-50/30 hover:bg-blue-50'
-                              : 'border-border bg-muted/10 hover:bg-muted/20'
+                            "group relative rounded-xl border p-3.5 transition-all hover:shadow-md",
+                            sub.status === "ACTIVE"
+                              ? "border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50"
+                              : sub.status === "UPCOMING"
+                                ? "border-blue-200 bg-blue-50/30 hover:bg-blue-50"
+                                : "border-border bg-muted/10 hover:bg-muted/20",
                           )}
                         >
                           {/* Row 1: Seat + Status + Amount */}
@@ -704,12 +800,14 @@ export default function StudentProfileClient() {
                             <div>
                               <p className="font-bold text-sm text-foreground">
                                 Seat #{sub.seatNo}
-                                <span className="text-muted-foreground font-normal mx-1">·</span>
+                                <span className="text-muted-foreground font-normal mx-1">
+                                  ·
+                                </span>
                                 {sub.floorName}
                               </p>
                               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <StatusBadge status={sub.status} />
-                                {sub.status === 'ACTIVE' && daysLeft <= 7 && (
+                                {sub.status === "ACTIVE" && daysLeft <= 7 && (
                                   <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
                                     {daysLeft}d left
                                   </span>
@@ -718,16 +816,24 @@ export default function StudentProfileClient() {
                             </div>
                             <div className="text-right">
                               <div className="flex flex-col items-end gap-0.5">
-                                <p className="text-[11px] text-muted-foreground font-medium">₹{sub.totalAmount}</p>
+                                <p className="text-[11px] text-muted-foreground font-medium">
+                                  ₹{sub.totalAmount}
+                                </p>
                                 {sub.discount > 0 && (
-                                  <p className="text-[11px] text-destructive font-semibold">-₹{sub.discount}</p>
+                                  <p className="text-[11px] text-destructive font-semibold">
+                                    -₹{sub.discount}
+                                  </p>
                                 )}
                               </div>
-                              <p className={cn(
-                                'text-sm font-bold mt-1',
-                                due === 0 ? 'text-emerald-600' : 'text-amber-600'
-                              )}>
-                                {due === 0 ? '✓ Cleared' : `₹${due} due`}
+                              <p
+                                className={cn(
+                                  "text-sm font-bold mt-1",
+                                  due === 0
+                                    ? "text-emerald-600"
+                                    : "text-amber-600",
+                                )}
+                              >
+                                {due === 0 ? "✓ Cleared" : `₹${due} due`}
                               </p>
                             </div>
                           </div>
@@ -735,16 +841,19 @@ export default function StudentProfileClient() {
                           {/* Row 2: Dates */}
                           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium mb-2.5">
                             <Calendar className="size-3" />
-                            {new Date(sub.startDate).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: '2-digit',
-                            })}
+                            {new Date(sub.startDate).toLocaleDateString(
+                              "en-IN",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "2-digit",
+                              },
+                            )}
                             <ArrowRight className="size-3" />
-                            {new Date(sub.endDate).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: '2-digit',
+                            {new Date(sub.endDate).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "2-digit",
                             })}
                           </div>
 
@@ -781,7 +890,6 @@ export default function StudentProfileClient() {
         </div>
       </div>
 
-
       {/* Update Dues Dialog */}
       {duesDialog && (
         <UpdateDuesDialog
@@ -792,6 +900,59 @@ export default function StudentProfileClient() {
           onSuccess={fetchStudentData}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md bg-background border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="size-5" /> Confirm Deletion
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground mt-2">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-foreground">
+                {student.name}
+              </span>
+              ? All their subscription history, records, and associated images
+              will be permanently removed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Trash2 className="size-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-4 mr-2" />
+                  Delete Student
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Preview Dialog */}
+      <DocumentPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        imageUrl={previewImage}
+        title={previewTitle}
+      />
     </div>
   );
 }
@@ -822,18 +983,14 @@ function ActiveSubscriptionCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 space-y-4">
-
         {/* Seat / Floor / Shift */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Seat', value: `#${sub.seatNo}` },
-            { label: 'Floor', value: sub.floorName },
+            { label: "Seat", value: `#${sub.seatNo}` },
+            { label: "Floor", value: sub.floorName },
             {
-              label: 'Shifts',
-              value:
-                sub.shiftName.length > 0
-                  ? sub.shiftName.join(', ')
-                  : '—',
+              label: "Shifts",
+              value: sub.shiftName.length > 0 ? sub.shiftName.join(", ") : "—",
             },
           ].map((item) => (
             <div
@@ -857,10 +1014,10 @@ function ActiveSubscriptionCard({
               Start
             </p>
             <p className="text-xs font-semibold text-foreground">
-              {new Date(sub.startDate).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
+              {new Date(sub.startDate).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
               })}
             </p>
           </div>
@@ -869,21 +1026,21 @@ function ActiveSubscriptionCard({
               End
             </p>
             <p className="text-xs font-semibold text-emerald-600">
-              {new Date(sub.endDate).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
+              {new Date(sub.endDate).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
               })}
             </p>
           </div>
           <div
             className={cn(
-              'rounded-lg px-3 py-2.5 border text-center',
+              "rounded-lg px-3 py-2.5 border text-center",
               daysLeft <= 3
-                ? 'bg-red-50 border-red-200'
+                ? "bg-red-50 border-red-200"
                 : daysLeft <= 7
-                ? 'bg-amber-50 border-amber-200'
-                : 'bg-emerald-50 border-emerald-200'
+                  ? "bg-amber-50 border-amber-200"
+                  : "bg-emerald-50 border-emerald-200",
             )}
           >
             <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
@@ -891,12 +1048,12 @@ function ActiveSubscriptionCard({
             </p>
             <p
               className={cn(
-                'text-lg font-bold',
+                "text-lg font-bold",
                 daysLeft <= 3
-                  ? 'text-red-600'
+                  ? "text-red-600"
                   : daysLeft <= 7
-                  ? 'text-amber-600'
-                  : 'text-emerald-600'
+                    ? "text-amber-600"
+                    : "text-emerald-600",
               )}
             >
               {Math.max(0, daysLeft)}d
@@ -909,7 +1066,7 @@ function ActiveSubscriptionCard({
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
             Payment Summary
           </p>
-          
+
           {/* Price Breakdown */}
           <div className="bg-muted/30 rounded-lg p-2.5 space-y-1.5 text-sm">
             <div className="flex justify-between">
@@ -919,18 +1076,22 @@ function ActiveSubscriptionCard({
             {sub.discount > 0 && (
               <div className="flex justify-between border-t border-border pt-1.5">
                 <span className="text-destructive font-medium">Discount</span>
-                <span className="font-bold text-destructive">-₹{sub.discount}</span>
+                <span className="font-bold text-destructive">
+                  -₹{sub.discount}
+                </span>
               </div>
             )}
-            <div className={cn(
-              'flex justify-between border-t pt-1.5 font-bold',
-              sub.discount > 0 && 'border-border'
-            )}>
+            <div
+              className={cn(
+                "flex justify-between border-t pt-1.5 font-bold",
+                sub.discount > 0 && "border-border",
+              )}
+            >
               <span className="text-primary">Final Amount</span>
               <span className="text-primary">₹{finalAmount}</span>
             </div>
           </div>
-          
+
           {/* Progress Bar */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs font-semibold text-muted-foreground">
@@ -940,8 +1101,8 @@ function ActiveSubscriptionCard({
             <div className="h-2 rounded-full bg-muted overflow-hidden">
               <div
                 className={cn(
-                  'h-full rounded-full transition-all',
-                  progress === 100 ? 'bg-emerald-500' : 'bg-amber-500'
+                  "h-full rounded-full transition-all",
+                  progress === 100 ? "bg-emerald-500" : "bg-amber-500",
                 )}
                 style={{ width: `${progress}%` }}
               />
@@ -951,29 +1112,41 @@ function ActiveSubscriptionCard({
               <span>₹{finalAmount}</span>
             </div>
           </div>
-          
+
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-2 pt-2">
             <div className="rounded-lg border border-border bg-slate-50 p-2 text-center">
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide mb-1">Amount</p>
-              <p className="text-sm font-bold text-foreground">₹{finalAmount}</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide mb-1">
+                Amount
+              </p>
+              <p className="text-sm font-bold text-foreground">
+                ₹{finalAmount}
+              </p>
             </div>
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-center">
-              <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wide mb-1">Paid</p>
-              <p className="text-sm font-bold text-emerald-600">₹{sub.amountPaid}</p>
+              <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wide mb-1">
+                Paid
+              </p>
+              <p className="text-sm font-bold text-emerald-600">
+                ₹{sub.amountPaid}
+              </p>
             </div>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-center">
-              <p className={cn(
-                'text-[10px] font-bold uppercase tracking-wide mb-1',
-                dues === 0 ? 'text-emerald-700' : 'text-amber-700'
-              )}>
-                {dues === 0 ? 'Status' : 'Due'}
+              <p
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wide mb-1",
+                  dues === 0 ? "text-emerald-700" : "text-amber-700",
+                )}
+              >
+                {dues === 0 ? "Status" : "Due"}
               </p>
-              <p className={cn(
-                'text-sm font-bold',
-                dues === 0 ? 'text-emerald-600' : 'text-amber-600'
-              )}>
-                {dues === 0 ? '✓ Cleared' : `₹${dues}`}
+              <p
+                className={cn(
+                  "text-sm font-bold",
+                  dues === 0 ? "text-emerald-600" : "text-amber-600",
+                )}
+              >
+                {dues === 0 ? "✓ Cleared" : `₹${dues}`}
               </p>
             </div>
           </div>
