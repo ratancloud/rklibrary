@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -28,7 +29,7 @@ import {
   flexRender,
   ColumnDef,
 } from "@tanstack/react-table";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -53,8 +54,8 @@ import { formatMemberId } from "@/lib/helper";
 import { useRouter } from "next/navigation";
 import { sendWhatsAppMessage } from "@/lib/sendMsg";
 import { WhatsappIcon } from "../icons/SocialIcons";
-import Image from "next/image";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -81,6 +82,11 @@ interface Student {
   address: string | null;
   lockerNumber: number | null;
   profileImageUrl: string | null;
+  profileImageId: string | null;
+  aadhaarFrontUrl: string | null;
+  aadhaarFrontId: string | null;
+  aadhaarBackUrl: string | null;
+  aadhaarBackId: string | null;
   subscriptions: Subscription[];
 }
 
@@ -163,13 +169,13 @@ const generateWhatsAppReceipt = ({
 
 export default function StudentTable() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "expired" | "none"
   >("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   // Fetch students using React Query
   const { data: studentsData, isLoading } = useQuery({
@@ -178,6 +184,55 @@ export default function StudentTable() {
       const response = await fetch("/api/students");
       const result = await response.json();
       return result.success ? result.data : [];
+    },
+  });
+
+  // Delete student mutation
+  const { mutate: deleteStudent, isPending: deleting } = useMutation({
+    mutationFn: async (studentId: string) => {
+      // Get student data to collect image IDs
+      const studentToDelete = students.find((s: Student) => s.id === studentId);
+      const imageFileIds: string[] = [];
+
+      if (studentToDelete) {
+        if (studentToDelete.profileImageId)
+          imageFileIds.push(studentToDelete.profileImageId);
+        if (studentToDelete.aadhaarFrontId)
+          imageFileIds.push(studentToDelete.aadhaarFrontId);
+        if (studentToDelete.aadhaarBackId)
+          imageFileIds.push(studentToDelete.aadhaarBackId);
+      }
+
+      // Delete student from database
+      const res = await fetch(`/api/students/${studentId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to delete student");
+      }
+
+      // Delete images from ImageKit if any exist
+      if (imageFileIds.length > 0) {
+        await fetch("/api/imagekit/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileIds: imageFileIds }),
+        }).catch((err) =>
+          console.error("Failed to delete student images:", err),
+        );
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Student and associated images deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      setShowDeleteDialog(false);
+      setStudentToDelete(null);
+    },
+    onError: (err) => {
+      console.error("Failed to delete student:", err);
+      toast.error("Failed to delete student");
     },
   });
 
@@ -203,7 +258,7 @@ export default function StudentTable() {
 
       const daysLeft = differenceInDays(
         new Date(latestSub.endDate),
-        new Date()
+        new Date(),
       );
       const isExpired = latestSub.status !== "ACTIVE" || daysLeft < 0;
 
@@ -266,26 +321,9 @@ export default function StudentTable() {
   };
 
   // Delete student
-  const confirmDelete = async () => {
+  const confirmDelete = () => {
     if (!studentToDelete) return;
-    try {
-      setDeleting(true);
-      const res = await fetch(`/api/students/${studentToDelete}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        toast.success("Student deleted successfully");
-        // Refetch students
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error("Failed to delete student:", error);
-      toast.error("Failed to delete student");
-    } finally {
-      setDeleting(false);
-      setShowDeleteDialog(false);
-      setStudentToDelete(null);
-    }
+    deleteStudent(studentToDelete);
   };
 
   // Define columns for TanStack Table
@@ -317,13 +355,15 @@ export default function StudentTable() {
       header: "Student",
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          <Image
-            src={row.original.profileImageUrl || "/default-avatar.png"}
-            alt={row.original.name}
-            width={40}
-            height={40}
-            className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border border-border shrink-0"
-          />
+          <Avatar className="h-8 w-8 border border-border md:h-10 md:w-10 shrink-0">
+            <AvatarImage
+              src={row.original.profileImageUrl || ""}
+              alt={row.original.name}
+            />
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs md:text-sm uppercase">
+              {row.original.name?.charAt(0) || "?"}
+            </AvatarFallback>
+          </Avatar>
           <div className="min-w-0">
             <p className="font-bold text-foreground capitalize text-xs md:text-sm truncate">
               {row.original.name}
@@ -397,7 +437,7 @@ export default function StudentTable() {
 
         const daysLeft = differenceInDays(
           new Date(latestSub.endDate),
-          new Date()
+          new Date(),
         );
         const subStatus = getSubStatus(row.original.subscriptions);
 
@@ -409,7 +449,7 @@ export default function StudentTable() {
             <Badge
               className={cn(
                 "px-1.5 py-0 mt-0.5 text-xs font-bold border shadow-none",
-                subStatus.color
+                subStatus.color,
               )}
             >
               {daysLeft < 0
@@ -434,9 +474,7 @@ export default function StudentTable() {
         const dues = finalAmount - latestSub.amountPaid;
 
         return (
-          <span className="font-semibold text-amber-600 text-xs">
-            ₹{dues}
-          </span>
+          <span className="font-semibold text-amber-600 text-xs">₹{dues}</span>
         );
       },
     },
@@ -444,33 +482,36 @@ export default function StudentTable() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex items-center justify-end gap-0.5 md:gap-1">
+        <div className="flex items-center justify-end gap-1 md:gap-2">
           {/* SMS */}
           <ActionBtn
             icon={Phone}
             color="text-blue-500 hover:bg-blue-500/10"
             onClick={() => {
               const msg = encodeURIComponent(
-                `Hi ${row.original.name}, this is from RK Library.`
+                `Hi ${row.original.name}, this is from RK Library.`,
               );
-              window.open(`sms:${row.original.phoneNumber}?body=${msg}`, "_blank");
+              window.open(
+                `sms:${row.original.phoneNumber}?body=${msg}`,
+                "_blank",
+              );
             }}
             title="Send SMS"
           />
 
           {/* WhatsApp */}
-          <Button
-            type="button"
-            title="Send WhatsApp"
-            className="p-1.5 rounded-lg transition-colors bg-background border shadow-sm hover:border-transparent text-emerald-500 hover:bg-emerald-500/10 border-emerald-500/20"
+          <ActionBtn
+            icon={WhatsappIcon}
+            color="text-emerald-500 hover:bg-emerald-500/10"
             onClick={() => {
               const latestSub = row.original.subscriptions[0];
               if (latestSub) {
                 const daysLeft = differenceInDays(
                   new Date(latestSub.endDate),
-                  new Date()
+                  new Date(),
                 );
-                const finalAmount = latestSub.totalAmount - (latestSub.discount || 0);
+                const finalAmount =
+                  latestSub.totalAmount - (latestSub.discount || 0);
                 const dues = finalAmount - latestSub.amountPaid;
 
                 const message = generateWhatsAppReceipt({
@@ -490,9 +531,8 @@ export default function StudentTable() {
                 toast.error("No subscription found");
               }
             }}
-          >
-            <WhatsappIcon className="size-3.5" />
-          </Button>
+            title="Send WhatsApp"
+          />
 
           {/* Renew */}
           <ActionBtn
@@ -594,8 +634,7 @@ export default function StudentTable() {
             className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary rounded-lg h-9 md:h-10 px-4 md:px-6 font-medium text-xs md:text-sm transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/15"
           >
             <Plus className="size-3.5 mr-1.5" />
-            <span className="hidden sm:inline">Add</span>
-            <span className="sm:hidden">+</span>
+            <span>Add</span>
           </Button>
         </div>
 
@@ -614,10 +653,12 @@ export default function StudentTable() {
                 "px-2.5 md:px-4 py-1.5 md:py-1.75 text-[11px] md:text-xs rounded-md md:rounded-lg whitespace-nowrap transition-all duration-200 border font-medium flex items-center gap-1 md:gap-1.5 group relative",
                 statusFilter === tab.id
                   ? "bg-linear-to-r from-primary to-primary/90 text-primary-foreground border-primary shadow-md shadow-primary/15"
-                  : "bg-background border-border text-muted-foreground hover:bg-muted hover:border-muted-foreground/30 hover:text-foreground"
+                  : "bg-background border-border text-muted-foreground hover:bg-muted hover:border-muted-foreground/30 hover:text-foreground",
               )}
             >
-              {tab.icon && <tab.icon className="size-3 md:size-3.5 transition-transform group-hover:scale-110" />}
+              {tab.icon && (
+                <tab.icon className="size-3 md:size-3.5 transition-transform group-hover:scale-110" />
+              )}
               <span>{tab.label}</span>
               {statusFilter === tab.id && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-white to-transparent opacity-50 rounded-b" />
@@ -658,7 +699,10 @@ export default function StudentTable() {
             <Table className="min-w-full">
               <TableHeader className="bg-linear-to-r from-muted/40 via-muted/30 to-muted/40 border-b-2 border-primary/10">
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="border-b border-border hover:bg-transparent">
+                  <TableRow
+                    key={headerGroup.id}
+                    className="border-b border-border hover:bg-transparent"
+                  >
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
@@ -668,7 +712,7 @@ export default function StudentTable() {
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                       </TableHead>
                     ))}
@@ -688,7 +732,7 @@ export default function StudentTable() {
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}
@@ -704,13 +748,21 @@ export default function StudentTable() {
       {filteredStudents.length > 0 && (
         <div className="px-2 md:px-4 py-2 border-t border-border bg-linear-to-r from-muted/20 via-muted/10 to-muted/20 flex items-center justify-between text-xs">
           <div className="font-medium text-muted-foreground">
-            <span className="text-foreground font-semibold">{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-{Math.min(
-              (table.getState().pagination.pageIndex + 1) *
-                table.getState().pagination.pageSize,
-              filteredStudents.length
-            )}</span>
+            <span className="text-foreground font-semibold">
+              {table.getState().pagination.pageIndex *
+                table.getState().pagination.pageSize +
+                1}
+              -
+              {Math.min(
+                (table.getState().pagination.pageIndex + 1) *
+                  table.getState().pagination.pageSize,
+                filteredStudents.length,
+              )}
+            </span>
             <span className="text-muted-foreground"> of </span>
-            <span className="text-foreground font-semibold">{filteredStudents.length}</span>
+            <span className="text-foreground font-semibold">
+              {filteredStudents.length}
+            </span>
           </div>
           <div className="flex gap-1.5">
             <Button
@@ -744,7 +796,8 @@ export default function StudentTable() {
             </DialogTitle>
             <DialogDescription className="text-muted-foreground mt-2">
               Are you sure you want to delete this student? All their
-              subscription history and records will be permanently removed.
+              subscription history, records, and associated images will be
+              permanently removed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 mt-4">
@@ -777,7 +830,7 @@ export default function StudentTable() {
 // ─── Helper Components ───────────────────────────────────────────────────────
 
 interface ActionBtnProps {
-  icon: LucideIcon;
+  icon: LucideIcon | React.ComponentType<{ className?: string }>;
   color: string;
   onClick: () => void;
   title: string;
@@ -789,11 +842,13 @@ function ActionBtn({ icon: Icon, color, onClick, title }: ActionBtnProps) {
       onClick={onClick}
       title={title}
       className={cn(
-        "p-1 rounded-md transition-colors bg-background border border-border shadow-sm hover:border-transparent text-xs",
-        color
+        "p-2 rounded-lg transition-all duration-200 bg-background border border-border shadow-sm hover:shadow-md hover:border-transparent text-xs md:text-sm",
+        "flex items-center justify-center",
+        "active:scale-95 hover:scale-105",
+        color,
       )}
     >
-      <Icon size={12} />
+      <Icon className="size-4" />
     </button>
   );
 }
@@ -810,16 +865,18 @@ function StatCard({ icon: Icon, label, value, color }: StatCardProps) {
     <div className="group relative overflow-hidden rounded-lg border border-border bg-linear-to-br from-background to-muted/20 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
       {/* Gradient overlay on hover */}
       <div className="absolute inset-0 bg-linear-to-br from-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:to-primary/5 transition-all duration-300" />
-      
+
       <div className="relative flex items-center gap-2 md:gap-3 p-2.5 md:p-3">
         {/* Icon background */}
-        <div className={cn(
-          "p-1.5 md:p-2 rounded-md text-white shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-md",
-          `bg-linear-to-br ${color}`
-        )}>
+        <div
+          className={cn(
+            "p-1.5 md:p-2 rounded-md text-white shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-md",
+            `bg-linear-to-br ${color}`,
+          )}
+        >
           <Icon className="size-3 md:size-4" />
         </div>
-        
+
         {/* Content */}
         <div className="flex-1 min-w-0">
           <p className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-tight leading-tight">

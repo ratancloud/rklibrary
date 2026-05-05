@@ -3,12 +3,12 @@
 import { useState, useRef } from "react";
 import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as z from "zod";
 import {
   Loader2,
   Upload,
-  X,
+  Trash2,
   User,
   CreditCard,
   Image as ImageIcon,
@@ -90,6 +90,7 @@ export default function StudentForm({
   isEditing?: boolean;
   onSuccess?: () => void;
 }) {
+  const queryClient = useQueryClient();
   const [statusText, setStatusText] = useState("");
 
   const [images, setImages] = useState<ImageState>({
@@ -272,6 +273,7 @@ export default function StudentForm({
     },
     onSuccess: () => {
       toast.success(isEditing ? "Profile updated" : "Student registered");
+      queryClient.invalidateQueries({ queryKey: ["students"] });
       if (!isEditing) reset();
       onSuccess?.();
       setStatusText("");
@@ -318,8 +320,8 @@ export default function StudentForm({
                   ? "border-transparent"
                   : "border-muted-foreground/20",
                 isProfile
-                  ? "w-32 h-32 rounded-full mx-auto"
-                  : "w-full aspect-3/2",
+                  ? "w-44 h-44 rounded-xl mx-auto"
+                  : "w-full aspect-3/2 rounded-xl",
               )}
             >
               {images[type].preview ? (
@@ -341,9 +343,15 @@ export default function StudentForm({
                         fileInputRefs[type].current.value = "";
                       }
                     }}
-                    className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    className={cn(
+                      "absolute top-2 right-2 z-10 rounded-full bg-destructive/90 hover:bg-destructive text-white shadow-lg transition-all duration-200",
+                      "flex items-center justify-center p-2 w-8 h-8",
+                      "hover:scale-110 active:scale-95",
+                      "focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                    )}
+                    title="Remove image"
                   >
-                    <X className="w-6 h-6" />
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 </>
               ) : (
