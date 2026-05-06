@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { publicAuthenticator } from "@/lib/publicImageClintAuth";
+import { useRouter } from "next/navigation";
 
 const studentRegisterSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -61,6 +62,7 @@ export default function StudentRegisterForm({
 }: {
   libraryId: string;
 }) {
+  const router = useRouter();
   const [statusText, setStatusText] = useState("");
 
   const [images, setImages] = useState<ImageState>({
@@ -217,6 +219,7 @@ export default function StudentRegisterForm({
         aadhaarBack: { file: null, preview: "", fileId: undefined },
       });
       setStatusText("");
+      router.push("/registration-success");
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Error occurred");
