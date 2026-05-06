@@ -75,6 +75,7 @@ export async function GET() {
                         startDate: true,
                         endDate: true,
                         totalAmount: true,
+                        discount: true,
                         amountPaid: true,
                         shiftName: true,
                       },
@@ -118,7 +119,7 @@ export async function GET() {
             studentId: asg.student.id,
             startDate: sub?.startDate || null,
             expiry: sub?.endDate || null,
-            isDue: sub ? sub.totalAmount > sub.amountPaid : false,
+            isDue: sub ? (sub.totalAmount - sub.discount) > sub.amountPaid : false,
             subscriptionId: sub?.id || null,
           };
         }
