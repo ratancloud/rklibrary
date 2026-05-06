@@ -6,6 +6,7 @@ import { LibraryBasicDetails } from "@/components/settings/LibraryBasicDetails";
 import { ShiftDetails } from "@/components/settings/ShiftDetails";
 import { FloorsSection } from "@/components/settings/FloorsSection";
 import { SettingsSkeleton } from "@/components/skelton/SettingsSkeleton";
+import RegistrationLinkGenerator from "@/components/publicStudent/RegistrationLinkGenerator";
 import { useLibraryStore } from "@/store/useLibraryStore";
 import {
   Breadcrumb,
@@ -100,6 +101,11 @@ export default function LibrarySettingsClient(){
             shifts={data.shifts || []}
             onSyncShifts={(shifts) => syncShifts(data.id, shifts)}
             isLoading={isLoading}
+          />
+
+          {/* Student Registration Link */}
+          <RegistrationLinkGenerator 
+            libraryId={data.id} 
           />
         </div>
       </div>
