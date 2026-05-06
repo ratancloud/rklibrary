@@ -250,7 +250,6 @@ export default function StudentRegisterForm({
     icon: LucideIcon;
   }) => {
     const isProfile = type === "profileImage";
-    const isAdharBack = type === "aadhaarBack";
     return (
       <Card
         className={cn(
@@ -263,9 +262,7 @@ export default function StudentRegisterForm({
             <span className="flex items-center gap-2">
               <Icon className="w-4 h-4" /> {label}
             </span>
-            { !isAdharBack && (
-              <span className="text-xs text-red-500 font-normal">* Required</span>
-            )}
+            <span className="text-xs text-red-500 font-normal">* Required</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-4 pt-4">

@@ -61,7 +61,10 @@ interface StudentData {
   name: string;
   gender: string;
   phoneNumber: string;
+  fatherName: string;
+  fatherPhone: string;
   address: string | null;
+  temporaryAddress: string | null;
   lockerNumber: number | null;
   memberId: number | null;
   createdAt: string;
@@ -313,7 +316,10 @@ export default function StudentProfileClient() {
             name: s.name,
             gender: s.gender,
             phoneNumber: s.phoneNumber,
+            fatherName: s.fatherName,
+            fatherPhone: s.fatherPhone,
             address: s.address,
+            temporaryAddress: s.temporaryAddress || null,
             lockerNumber: s.lockerNumber,
             memberId: s.memberId,
             createdAt: s.createdAt,
@@ -445,7 +451,7 @@ export default function StudentProfileClient() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{student.name}</BreadcrumbPage>
+                <BreadcrumbPage className="text-primary">{student.name}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -470,6 +476,11 @@ export default function StudentProfileClient() {
                 {student.profileImageUrl ? (
                   <div className="relative size-14 rounded-full border-2 border-white/30 flex items-center justify-center shrink-0 overflow-hidden bg-white/10 backdrop-blur-sm shadow-lg">
                     <Image
+                      onClick={() => {
+                        setPreviewImage(student.profileImageUrl);
+                        setPreviewTitle(student.name + "'s Profile Picture");
+                        setPreviewOpen(true);
+                      }}
                       src={student.profileImageUrl}
                       alt={student.name}
                       fill
@@ -630,8 +641,25 @@ export default function StudentProfileClient() {
                   { label: "Full Name", value: student.name, mono: false },
                   { label: "Gender", value: student.gender, mono: false },
                   { label: "Phone", value: student.phoneNumber, mono: true },
+                  {
+                    label: "Father's Name",
+                    value: student.fatherName,
+                    mono: false,
+                  },
+                  {
+                    label: "Father's Phone",
+                    value: student.fatherPhone,
+                    mono: true,
+                  },
                   student.address
                     ? { label: "Address", value: student.address, mono: false }
+                    : null,
+                  student.temporaryAddress
+                    ? {
+                        label: "Temporary Address",
+                        value: student.temporaryAddress,
+                        mono: false,
+                      }
                     : null,
                 ]
                   .filter(Boolean)

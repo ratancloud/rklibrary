@@ -11,6 +11,12 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Card } from "@/components/ui/card";
 import NewRegistrationContent from "./new-registration-content";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "New Registration",
+  description: "Register as a new student to access our library resources and services",
+};
 
 function LoadingContent() {
   return (
@@ -49,7 +55,7 @@ export default function StudentRegisterPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">
             Student Registration
           </h1>
         </div>

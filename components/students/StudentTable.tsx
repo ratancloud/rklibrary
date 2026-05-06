@@ -56,6 +56,7 @@ import { sendWhatsAppMessage } from "@/lib/sendMsg";
 import { WhatsappIcon } from "../icons/SocialIcons";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { DocumentPreviewDialog } from "./DocumentPreviewDialog";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -176,6 +177,9 @@ export default function StudentTable() {
   >("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState<string>("");
 
   // Fetch students using React Query
   const { data: studentsData, isLoading } = useQuery({
@@ -355,7 +359,14 @@ export default function StudentTable() {
       header: "Student",
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8 border border-border md:h-10 md:w-10 shrink-0">
+          <Avatar
+            onClick={() => {
+              setPreviewImage(row.original.profileImageUrl);
+              setPreviewTitle(row.original.name + "'s Profile Picture");
+              setPreviewOpen(true);
+            }}
+            className="h-8 w-8 border border-border md:h-10 md:w-10 shrink-0"
+          >
             <AvatarImage
               src={row.original.profileImageUrl || ""}
               alt={row.original.name}
@@ -648,7 +659,9 @@ export default function StudentTable() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setStatusFilter(tab.id as any)}
+              onClick={() =>
+                setStatusFilter(tab.id as "all" | "active" | "expired" | "none")
+              }
               className={cn(
                 "px-2.5 md:px-4 py-1.5 md:py-1.75 text-[11px] md:text-xs rounded-md md:rounded-lg whitespace-nowrap transition-all duration-200 border font-medium flex items-center gap-1 md:gap-1.5 group relative",
                 statusFilter === tab.id
@@ -823,6 +836,14 @@ export default function StudentTable() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Document Preview Dialog */}
+      <DocumentPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        imageUrl={previewImage}
+        title={previewTitle}
+      />
     </div>
   );
 }

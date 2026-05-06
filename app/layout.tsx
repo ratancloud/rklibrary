@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     default: "RKLibrary",
     template: "%s | RKLibrary",
   },
-  description: "RKLibrary is a comprehensive school management system designed to streamline administrative tasks, enhance communication, and improve overall efficiency in educational institutions.",
+  description: "RKLibrary is a personal library and reading room management system designed to streamline student seat allocations, track memberships, and simplify daily administrative tasks.",
   applicationName: "RKLibrary",
   manifest: "/manifest.webmanifest",
 };
