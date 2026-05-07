@@ -19,6 +19,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   useReactTable,
@@ -52,16 +54,17 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatMemberId } from "@/lib/helper";
 import { useRouter } from "next/navigation";
-import { sendWhatsAppMessage } from "@/lib/sendMsg";
+import { generateWhatsAppReceipt, sendWhatsAppMessage } from "@/lib/sendMsg";
 import { WhatsappIcon } from "../icons/SocialIcons";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DocumentPreviewDialog } from "./DocumentPreviewDialog";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 interface Subscription {
   id: string;
+  floorName: string;
+  seatNo: number;
+  shiftName: string[];
   totalAmount: number;
   discount: number;
   amountPaid: number;
@@ -90,83 +93,6 @@ interface Student {
   aadhaarBackId: string | null;
   subscriptions: Subscription[];
 }
-
-interface ReceiptData {
-  studentName: string;
-  memberId: string | number | null;
-  daysLeft: number;
-  dues: number;
-  totalAmount: number;
-  discount: number;
-  amountPaid: number;
-  startDateStr: string;
-  endDateStr: string;
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const formatIndianDate = (dateString: string): string =>
-  new Date(dateString).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-
-const DIVIDER = "─────────────────────────────";
-
-const buildAlert = (dues: number, daysLeft: number): string => {
-  if (dues > 0)
-    return `Note: A due balance of Rs. ${dues} is pending. Kindly clear it at the earliest to avoid any service interruption.`;
-  if (daysLeft >= 0 && daysLeft <= 3)
-    return `Notice: Your subscription is expiring within ${daysLeft} day(s). Please renew promptly to retain your allocated seat.`;
-  if (daysLeft < 0)
-    return `Notice: Your subscription has expired. Please renew immediately to continue availing library facilities.`;
-  return "";
-};
-
-const generateWhatsAppReceipt = ({
-  studentName,
-  memberId,
-  daysLeft,
-  dues,
-  totalAmount,
-  discount,
-  amountPaid,
-  startDateStr,
-  endDateStr,
-}: ReceiptData): string => {
-  const startDate = formatIndianDate(startDateStr);
-  const endDate = formatIndianDate(endDateStr);
-  const memberIdText = memberId ?? "Pending";
-  const daysDisplay = Math.max(0, daysLeft);
-  const finalAmount = totalAmount - discount;
-  const alert = buildAlert(dues, daysLeft);
-
-  const lines: string[] = [
-    `RK LIBRARY`,
-    `Official Subscription Receipt`,
-    DIVIDER,
-    `Name           : ${studentName}`,
-    `Member ID      : ${memberIdText}`,
-    `Start Date     : ${startDate}`,
-    `End Date       : ${endDate}`,
-    `Days Remaining : ${daysDisplay} days`,
-    DIVIDER,
-    `PAYMENT SUMMARY`,
-    `Total Fee      : Rs. ${totalAmount}`,
-    ...(discount > 0 ? [`Discount       : Rs. -${discount}`] : []),
-    `Final Amount   : Rs. ${finalAmount}`,
-    `Amount Paid    : Rs. ${amountPaid}`,
-    `Outstanding    : Rs. ${dues}`,
-    DIVIDER,
-    ...(alert ? [alert, DIVIDER] : []),
-    `Thank you for choosing RK Library.`,
-    ``,
-    `Authorized By  : Rajan Prakash (Owner)`,
-  ];
-
-  return lines.join("\n");
-};
 
 export default function StudentTable() {
   const router = useRouter();
@@ -535,6 +461,9 @@ export default function StudentTable() {
                   amountPaid: latestSub.amountPaid,
                   startDateStr: latestSub.startDate,
                   endDateStr: latestSub.endDate,
+                  floorName: latestSub.floorName,
+                  seatNo: latestSub.seatNo,
+                  shiftName: latestSub.shiftName,
                 });
 
                 sendWhatsAppMessage(row.original.phoneNumber, message);
@@ -684,15 +613,21 @@ export default function StudentTable() {
       {/* Table Content */}
       <div className="flex-1 overflow-x-auto">
         {isLoading ? (
-          <div className="flex flex-col justify-center items-center h-64 gap-3">
-            <div className="relative">
-              <Loader2 className="animate-spin text-primary size-8" />
-              <div className="absolute inset-0 animate-pulse bg-primary/20 rounded-full blur-xl" />
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground font-medium">
-                Loading students...
-              </p>
+          <div className="flex flex-col justify-center items-center gap-3 px-2 overflow-x-auto">
+            <div className="w-full animate-pulse">
+              {[...Array(10)].map((_, i) => (
+                <div  key={i} className="flex gap-2 mb-2 last:mb-0">
+                  <div className="h-8 bg-muted rounded w-10" />
+                  <div className="h-8 bg-muted rounded w-40" />
+                  <div className="h-8 bg-muted rounded w-24" />
+                  <div className="h-8 bg-muted rounded w-30 hidden md:inline-block" />
+                  <div className="h-8 bg-muted rounded w-24 hidden md:inline-block" />
+                  <div className="h-8 bg-muted rounded w-24 hidden md:inline-block" />
+                  <div className="h-8 bg-muted rounded w-24 hidden md:inline-block" />
+                  <div className="h-8 bg-muted rounded w-24" />
+                  <div className="h-8 bg-muted rounded w-50" />
+                </div>
+              ))}
             </div>
           </div>
         ) : filteredStudents.length === 0 ? (
@@ -785,7 +720,7 @@ export default function StudentTable() {
               disabled={!table.getCanPreviousPage()}
               className="text-xs font-medium rounded-md px-2.5 py-1 h-auto hover:bg-primary/10 hover:text-primary transition-all duration-200"
             >
-              ←
+              <ChevronLeft className="size-4" />
             </Button>
             <Button
               variant="outline"
@@ -794,7 +729,7 @@ export default function StudentTable() {
               disabled={!table.getCanNextPage()}
               className="text-xs font-medium rounded-md px-2.5 py-1 h-auto hover:bg-primary/10 hover:text-primary transition-all duration-200"
             >
-              →
+              <ChevronRight className="size-4" />
             </Button>
           </div>
         </div>
