@@ -27,9 +27,9 @@ const DIVIDER = "─────────────────────
 const buildAlert = (dues: number, daysLeft: number): string => {
   if (dues > 0)
     return `Note: A due balance of Rs. ${dues} is pending. Kindly clear it at the earliest to avoid any service interruption.`;
-  if (daysLeft >= 0 && daysLeft <= 3)
+  if (daysLeft >= 1 && daysLeft <= 3)
     return `Notice: Your subscription is expiring within ${daysLeft} day(s). Please renew promptly to retain your allocated seat.`;
-  if (daysLeft < 0)
+  if (daysLeft < 1)
     return `Notice: Your subscription has expired. Please renew immediately to continue availing library facilities.`;
   return "";
 };

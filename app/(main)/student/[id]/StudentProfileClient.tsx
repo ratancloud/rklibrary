@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +53,8 @@ import { cn } from "@/lib/utils";
 import { DocumentPreviewDialog } from "@/components/students/DocumentPreviewDialog";
 import { WhatsappIcon } from "@/components/icons/SocialIcons";
 import { generateWhatsAppReceipt, sendWhatsAppMessage } from "@/lib/sendMsg";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { differenceInDays } from "date-fns";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -476,25 +477,22 @@ export default function StudentProfileClient() {
               {/* Left: Identity */}
               <div className="flex items-start gap-4">
                 {/* Avatar */}
-                {student.profileImageUrl ? (
-                  <div className="relative size-14 rounded-full border-2 border-white/30 flex items-center justify-center shrink-0 overflow-hidden bg-white/10 backdrop-blur-sm shadow-lg">
-                    <Image
-                      onClick={() => {
-                        setPreviewImage(student.profileImageUrl);
-                        setPreviewTitle(student.name + "'s Profile Picture");
-                        setPreviewOpen(true);
-                      }}
-                      src={student.profileImageUrl}
-                      alt={student.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="size-14 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center shrink-0 text-xl font-bold text-white backdrop-blur-sm">
-                    {student.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <Avatar
+                  onClick={() => {
+                    setPreviewImage(student.profileImageUrl);
+                    setPreviewTitle(student.name + "'s Profile Picture");
+                    setPreviewOpen(true);
+                  }}
+                  className="h-8 w-8 border border-border md:h-10 md:w-10 shrink-0"
+                >
+                  <AvatarImage
+                    src={student.profileImageUrl || ""}
+                    alt={student.name}
+                  />
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs md:text-sm uppercase">
+                    {student.name?.charAt(0) || "?"}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <h1 className="text-xl font-bold tracking-tight">
@@ -1004,7 +1002,7 @@ function ActiveSubscriptionCard({
   const router = useRouter();
   const finalAmount = sub.totalAmount - (sub.discount || 0);
   const dues = finalAmount - sub.amountPaid;
-  const daysLeft = getDaysLeft(sub.endDate);
+  const daysLeft = differenceInDays(new Date(sub.endDate), new Date());
   const progress = Math.round((sub.amountPaid / finalAmount) * 100);
 
   return (
@@ -1101,7 +1099,7 @@ function ActiveSubscriptionCard({
             </p>
             <p
               className={cn(
-                "text-lg font-bold",
+                "text-xs font-bold",
                 daysLeft <= 3
                   ? "text-red-600"
                   : daysLeft <= 7
@@ -1109,7 +1107,7 @@ function ActiveSubscriptionCard({
                     : "text-emerald-600",
               )}
             >
-              {Math.max(0, daysLeft)}d
+              {Math.max(0, daysLeft)} Days
             </p>
           </div>
         </div>

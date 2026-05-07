@@ -23,7 +23,7 @@ const galleryImages: GalleryImage[] = [
   },
   {
     src: "/RKLibrary/building.jpeg",
-    title: "",
+    title: "Library Building",
     subtitle: "Exterior view of RK Library",
     span: "tall",
   },
@@ -76,6 +76,7 @@ function GalleryCard({ image }: { image: GalleryImage }) {
         fill
         className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        loading="eager"
       />
 
       {/* Dark gradient overlay — always subtle, stronger on hover */}

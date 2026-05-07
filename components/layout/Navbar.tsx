@@ -106,6 +106,7 @@ export default function Navbar() {
             alt="RKLibrary Logo"
             width={180}
             height={60}
+            className="h-auto w-auto"
             loading="eager"
           />
         </Link>
