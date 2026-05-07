@@ -35,7 +35,6 @@ import {
   KeyRound,
   IndianRupee,
   ArrowRight,
-  ChevronRight,
   Layers,
   BadgeCheck,
   Ban,
@@ -53,6 +52,8 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { DocumentPreviewDialog } from "@/components/students/DocumentPreviewDialog";
+import { WhatsappIcon } from "@/components/icons/SocialIcons";
+import { generateWhatsAppReceipt, sendWhatsAppMessage } from "@/lib/sendMsg";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -451,7 +452,9 @@ export default function StudentProfileClient() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="text-primary">{student.name}</BreadcrumbPage>
+                <BreadcrumbPage className="text-primary">
+                  {student.name}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -763,6 +766,7 @@ export default function StudentProfileClient() {
             {/* Active Subscription Card */}
             {activeSub ? (
               <ActiveSubscriptionCard
+                student={student}
                 sub={activeSub}
                 onUpdateDues={() => setDuesDialog(activeSub)}
               />
@@ -989,12 +993,15 @@ export default function StudentProfileClient() {
 // ─── Active Subscription Card ─────────────────────────────────────────────────
 
 function ActiveSubscriptionCard({
+  student,
   sub,
   onUpdateDues,
 }: {
+  student: StudentProfileData["student"];
   sub: SubscriptionData;
   onUpdateDues: () => void;
 }) {
+  const router = useRouter();
   const finalAmount = sub.totalAmount - (sub.discount || 0);
   const dues = finalAmount - sub.amountPaid;
   const daysLeft = getDaysLeft(sub.endDate);
@@ -1012,15 +1019,11 @@ function ActiveSubscriptionCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 space-y-4">
-        {/* Seat / Floor / Shift */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Seat / Floor */}
+        <div className="grid grid-cols-2 gap-2">
           {[
             { label: "Seat", value: `#${sub.seatNo}` },
             { label: "Floor", value: sub.floorName },
-            {
-              label: "Shifts",
-              value: sub.shiftName.length > 0 ? sub.shiftName.join(", ") : "—",
-            },
           ].map((item) => (
             <div
               key={item.label}
@@ -1029,11 +1032,32 @@ function ActiveSubscriptionCard({
               <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
                 {item.label}
               </p>
-              <p className="text-sm font-bold text-foreground capitalize truncate">
+              <p className="text-sm font-bold text-foreground capitalize">
                 {item.value}
               </p>
             </div>
           ))}
+        </div>
+
+        {/* Shifts - Display as badges for better visibility */}
+        <div className="bg-white border border-emerald-200/50 rounded-lg px-3 py-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
+            Shifts
+          </p>
+          {sub.shiftName.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {sub.shiftName.map((shift, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50/50 text-emerald-700 text-xs font-semibold capitalize"
+                >
+                  {shift}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">—</p>
+          )}
         </div>
 
         {/* Dates + Days Remaining */}
@@ -1183,7 +1207,10 @@ function ActiveSubscriptionCard({
 
         {/* Actions */}
         <div className="flex gap-2 pt-1">
-          <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 h-9 text-sm">
+          <Button
+            onClick={() => router.push(`/renew/${sub.id}`)}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 h-9 text-sm"
+          >
             <RefreshCw className="size-3.5" />
             Renew
           </Button>
@@ -1197,10 +1224,28 @@ function ActiveSubscriptionCard({
               Settle Dues
             </Button>
           )}
-          <Button variant="ghost" className="h-9 px-3 text-sm" asChild>
-            <Link href="#">
-              Details <ChevronRight className="size-3.5 ml-1" />
-            </Link>
+          <Button
+            size="icon-lg"
+            variant="outline"
+            onClick={() => {
+              const message = generateWhatsAppReceipt({
+                studentName: student.name,
+                memberId: student.memberId,
+                floorName: sub.floorName,
+                seatNo: sub.seatNo,
+                daysLeft: daysLeft,
+                dues: dues,
+                totalAmount: sub.totalAmount,
+                discount: sub.discount || 0,
+                amountPaid: sub.amountPaid,
+                startDateStr: sub.startDate,
+                endDateStr: sub.endDate,
+                shiftName: sub.shiftName,
+              });
+              sendWhatsAppMessage(student.phoneNumber, message);
+            }}
+          >
+            <WhatsappIcon className="size-5 text-green-500" />
           </Button>
         </div>
       </CardContent>
