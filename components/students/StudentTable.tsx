@@ -420,20 +420,17 @@ export default function StudentTable() {
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1 md:gap-2">
-          {/* SMS */}
+          {/* Call */}
           <ActionBtn
             icon={Phone}
             color="text-blue-500 hover:bg-blue-500/10"
             onClick={() => {
-              const msg = encodeURIComponent(
-                `Hi ${row.original.name}, this is from RK Library.`,
-              );
               window.open(
-                `sms:${row.original.phoneNumber}?body=${msg}`,
+                `tel:${row.original.phoneNumber}`,
                 "_blank",
               );
             }}
-            title="Send SMS"
+            title="Call"
           />
 
           {/* WhatsApp */}
