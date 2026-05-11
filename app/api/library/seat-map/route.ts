@@ -79,6 +79,7 @@ export async function GET() {
                         amountPaid: true,
                         shiftName: true,
                       },
+                      orderBy: { createdAt: "desc"}
                     },
                   },
                 },
