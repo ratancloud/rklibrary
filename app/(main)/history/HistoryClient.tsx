@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   useReactTable,
@@ -27,10 +27,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { History, Search, FileText, X, Home } from "lucide-react";
+import { History, Search, FileText, X, Home, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -115,7 +124,10 @@ export default function HistoryClient() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH_VALUE);
   const [page, setPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [subscriptionToDelete, setSubscriptionToDelete] = useState<HistoryRecord | null>(null);
   const pageSize = 10;
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -124,6 +136,37 @@ export default function HistoryClient() {
     }, 500);
     return () => clearTimeout(t);
   }, [searchQuery]);
+
+  const deleteSubscriptionMutation = useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const res = await fetch(`/api/history/${subscriptionId}`, {
+        method: "DELETE",
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to delete subscription");
+      }
+      
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Subscription deleted successfully");
+      setDeleteDialogOpen(false);
+      setSubscriptionToDelete(null);
+    
+      queryClient.invalidateQueries({
+        queryKey: ["history"],
+      });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to delete subscription");
+    },
+  });
+
+  const handleDeleteSubscription = () => {
+    if (!subscriptionToDelete) return;
+    deleteSubscriptionMutation.mutate(subscriptionToDelete.id);
+  };
 
   const fetchHistory = async (): Promise<HistoryResponse> => {
     const params = new URLSearchParams({
@@ -145,6 +188,9 @@ export default function HistoryClient() {
     ],
     queryFn: fetchHistory,
     placeholderData: (prev) => prev,
+    staleTime: 1000 * 60 * 5, 
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   useEffect(() => {
@@ -351,6 +397,23 @@ export default function HistoryClient() {
             </span>
           );
         },
+      }),
+      columnHelper.display({
+        id: "actions",
+        header: "Actions",
+        cell: (info) => (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setSubscriptionToDelete(info.row.original);
+              setDeleteDialogOpen(true);
+            }}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 size={16} />
+          </Button>
+        ),
       }),
     ],
     [page, pageSize],
@@ -602,6 +665,39 @@ export default function HistoryClient() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Subscription</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the subscription for{" "}
+              <span className="font-semibold text-foreground">
+                {subscriptionToDelete?.studentName}
+              </span>
+              ? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="rounded-lg bg-muted p-3">
+            <p className="text-xs text-muted-foreground mb-2">Subscription Details:</p>
+            <div className="space-y-1 text-sm">
+              <p><span className="font-medium">Member ID:</span> {subscriptionToDelete?.memberIdFormatted}</p>
+              <p><span className="font-medium">Seat:</span> {subscriptionToDelete?.floorName} · Seat {subscriptionToDelete?.seatNo}</p>
+              <p><span className="font-medium">Period:</span> {subscriptionToDelete?.startDate && new Date(subscriptionToDelete.startDate).toLocaleDateString('en-GB')} to {subscriptionToDelete?.endDate && new Date(subscriptionToDelete.endDate).toLocaleDateString('en-GB')}</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSubscription}
+              disabled={deleteSubscriptionMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteSubscriptionMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
