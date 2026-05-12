@@ -1,4 +1,3 @@
-
 import {
   User,
   AlertCircle,
@@ -47,7 +46,6 @@ export function ShiftCard({
   const daysInfo = getDaysRemaining(shiftData.expiry);
 
   const handleDissociate = async () => {
-    if (!shiftData.subscriptionId) return;
     setDeleteLoading(true);
     try {
       const res = await fetch("/api/library/remove-seat", {

@@ -39,7 +39,15 @@ export function VacantShiftCard({
       </div>
       {!isInactive && (
         <div className="flex items-center gap-2">
-          <Button size="sm" className="h-7 text-xs shrink-0">
+          <Button
+            size="sm"
+            className="h-7 text-xs shrink-0"
+            onClick={() =>
+              router.push(
+                `/seat-assigned?seatId=${seatId}`,
+              )
+            }
+          >
             Add
           </Button>
 
