@@ -478,6 +478,7 @@ export default function StudentProfileClient() {
               <div className="flex items-start gap-4">
                 {/* Avatar */}
                 <Avatar
+                  size="lg"
                   onClick={() => {
                     setPreviewImage(student.profileImageUrl);
                     setPreviewTitle(student.name + "'s Profile Picture");

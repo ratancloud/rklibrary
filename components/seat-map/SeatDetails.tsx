@@ -97,14 +97,13 @@ function ShiftCard({
   shiftName,
   shiftData,
   isInactive,
+  seatId,
   compact = false,
 }: {
   shiftName: string;
   shiftData: NonNullable<SeatInfo["shifts"][string]>;
   isInactive: boolean;
   seatId: string;
-  seatNo: string;
-  floorName: string;
   compact?: boolean;
 }) {
   const router = useRouter();
@@ -122,10 +121,11 @@ function ShiftCard({
     if (!shiftData.subscriptionId) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(
-        `/api/subscriptions/${shiftData.subscriptionId}/dissociate`,
-        { method: "DELETE" },
-      );
+      const res = await fetch("/api/library/remove-seat", {
+        method: "DELETE",
+        body: JSON.stringify({ seatId: seatId, shiftName: shiftName }),
+        headers: { "Content-Type": "application/json" },
+      });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Failed");
@@ -527,8 +527,6 @@ export function SeatDetails({
                   shiftData={shiftData}
                   isInactive={isInactive}
                   seatId={data.id}
-                  seatNo={seatNo}
-                  floorName={floorName}
                   compact
                 />
               );
@@ -560,8 +558,6 @@ export function SeatDetails({
                 shiftData={shiftData}
                 isInactive={isInactive}
                 seatId={data.id}
-                seatNo={seatNo}
-                floorName={floorName}
               />
             );
           }
