@@ -1,360 +1,518 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  BarChart3, 
-  Users, 
-  TrendingUp, 
-  Calendar, 
+import React, { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Users,
+  IndianRupee,
+  TrendingUp,
   AlertCircle,
-  ArrowUp,
-  ArrowDown,
-  Plus,
-  Home
-} from 'lucide-react';
-import { toast } from 'sonner';
-import Link from 'next/link';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+  CalendarDays,
+  Clock,
+  Layers,
+  ArrowRight,
+  Receipt,
+  UserPlus,
+  Home,
+} from "lucide-react";
+import MonthPicker from "@/components/MonthPicker";
+import type { MonthlyDashboardResponse } from "@/types/dashboard";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface DashboardStats {
-  totalStudents: number;
-  activeSubscriptions: number;
-  totalRevenue: number;
-  occupancyRate: number;
-  pendingPayments: number;
-  expiringThisMonth: number;
-}
+const fetchDashboardData = async (
+  year: number,
+  month: number,
+): Promise<MonthlyDashboardResponse> => {
+  const response = await fetch(`/api/dashboard?&year=${year}&month=${month}`);
+  if (!response.ok) throw new Error("Failed to fetch dashboard data");
+  return response.json();
+};
 
-interface RecentActivity {
-  id: string;
-  type: 'NEW_BOOKING' | 'RENEWAL' | 'EXPIRY' | 'PAYMENT';
-  studentName: string;
-  seatNo: number;
-  floorName: string;
-  amount?: number;
-  timestamp: string;
-}
-
-export default function DashboardClient() {
+export default function CompactDashboard() {
   const router = useRouter();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [activities, setActivities] = useState<RecentActivity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const now = new Date();
+  const [monthValue, setMonthValue] = useState(
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+  );
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [statsRes, activitiesRes] = await Promise.all([
-          fetch('/api/dashboard/stats'),
-          fetch('/api/dashboard/activities'),
-        ]);
+  const { year, month } = useMemo(() => {
+    const [y, m] = monthValue.split("-").map(Number);
+    return { year: y, month: m };
+  }, [monthValue]);
 
-        if (!statsRes.ok || !activitiesRes.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["dashboard", year, month],
+    queryFn: () => fetchDashboardData(year, month),
+    staleTime: 1000 * 60, // 
+  });
 
-        const statsData = await statsRes.json();
-        const activitiesData = await activitiesRes.json();
-
-        setStats(statsData.data);
-        setActivities(activitiesData.data || []);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to load dashboard';
-        setError(message);
-        toast.error(message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const StatCard = ({
-    title,
-    value,
-    icon: Icon,
-    trend,
-    color,
-    onClick,
-  }: {
-    title: string;
-    value: string | number;
-    icon: React.ComponentType<{ size: number; className?: string }>;
-    trend?: number;
-    color: 'emerald' | 'blue' | 'orange' | 'purple';
-    onClick?: () => void;
-  }) => {
-    const colorClasses = {
-      emerald: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-      blue: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-      orange: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
-      purple: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-    };
-
-    return (
-      <Card
-        className={`border ${colorClasses[color]} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-        onClick={onClick}
-      >
-        <CardContent className="pt-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">{title}</p>
-              <p className="text-3xl font-bold text-foreground mt-2">{value}</p>
-              {trend !== undefined && (
-                <div className="flex items-center gap-1 mt-2 text-xs font-semibold">
-                  {trend >= 0 ? (
-                    <>
-                      <ArrowUp size={14} className="text-emerald-600" />
-                      <span className="text-emerald-600">{trend}% this month</span>
-                    </>
-                  ) : (
-                    <>
-                      <ArrowDown size={14} className="text-red-600" />
-                      <span className="text-red-600">{Math.abs(trend)}% this month</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-              <Icon size={24} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <Skeleton className="h-10 w-50 rounded-lg" />
+          <Skeleton className="h-10 w-40 rounded-lg" />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-lg" />
+            <Skeleton key={i} className="h-40 rounded-2xl" />
           ))}
         </div>
-        <Skeleton className="h-96 rounded-lg" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-80 rounded-2xl" />
+          <Skeleton className="h-80 rounded-2xl" />
+        </div>
+        <Skeleton className="h-96 rounded-2xl" />
+      </div>
+    )
+  }
+  
+  if (isError || !data)
+    return (
+      <div className="p-8 text-center text-red-500">
+        Failed to load dashboard data.
       </div>
     );
-  }
-
-  if (error) {
-    return (
-      <Card className="border-destructive/50 bg-destructive/5">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-3 text-destructive">
-            <AlertCircle size={20} />
-            <p className="font-medium">{error}</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <div className="space-y-6">
+    <>
       {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/">
-                <Home className="w-4 h-4" />
-              </Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage className="text-primary">Dashboard</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <div className="flex items-center justify-between mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/">
+                  <Home className="w-4 h-4" />
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="text-primary">
+                Dashboard
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
-      {/* Key Metrics */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Month Picker */}
+        <MonthPicker value={monthValue} onChange={setMonthValue} />
+      </div>
+
+      <div className="space-y-6">
+        {/* --- Top KPIs Grid --- */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Students"
-            value={stats.totalStudents}
-            icon={Users}
-            color="emerald"
-            onClick={() => router.push('/student')}
+            value={data.kpis.totalStudents}
+            subtitle={
+              <span className="text-emerald-600 flex items-center gap-1">
+                <UserPlus className="h-3 w-3" /> +
+                {data.kpis.newStudentsThisMonth} new
+              </span>
+            }
+            icon={<Users className="text-indigo-600" />}
+            bgColor="bg-indigo-50 dark:bg-indigo-500/10"
           />
           <StatCard
-            title="Active Subscriptions"
-            value={stats.activeSubscriptions}
-            icon={TrendingUp}
-            color="blue"
+            title="Active Subs"
+            value={data.kpis.activeSubscriptions}
+            subtitle={`${data.kpis.totalStudents - data.kpis.activeSubscriptions} inactive`}
+            icon={<TrendingUp className="text-emerald-600" />}
+            bgColor="bg-emerald-50 dark:bg-emerald-500/10"
           />
           <StatCard
-            title="Total Revenue"
-            value={`₹${(stats.totalRevenue || 0).toLocaleString()}`}
-            icon={BarChart3}
-            color="orange"
+            title="Revenue Collected"
+            value={`₹${data.revenue.collectedRevenue.toLocaleString()}`}
+            subtitle={
+              <span
+                className={
+                  data.revenue.pendingRevenue > 0
+                    ? "text-amber-600"
+                    : "text-zinc-500"
+                }
+              >
+                ₹{data.revenue.pendingRevenue.toLocaleString()} pending
+              </span>
+            }
+            icon={<IndianRupee className="text-blue-600" />}
+            bgColor="bg-blue-50 dark:bg-blue-500/10"
           />
           <StatCard
-            title="Occupancy Rate"
-            value={`${(stats.occupancyRate || 0).toFixed(1)}%`}
-            icon={Calendar}
-            color="purple"
+            title="Expiring Soon"
+            value={data.kpis.expiringThisMonth}
+            subtitle="Needs renewal this month"
+            icon={
+              <AlertCircle
+                className={
+                  data.kpis.expiringThisMonth > 0
+                    ? "text-rose-600"
+                    : "text-zinc-400"
+                }
+              />
+            }
+            bgColor={
+              data.kpis.expiringThisMonth > 0
+                ? "bg-rose-50 dark:bg-rose-500/10"
+                : "bg-zinc-100 dark:bg-zinc-800"
+            }
           />
         </div>
-      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Alert Cards */}
-          {stats && (stats.pendingPayments > 0 || stats.expiringThisMonth > 0) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {stats.pendingPayments > 0 && (
-                <Card className="border-amber-500/30 bg-amber-500/5">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 rounded-lg bg-amber-500/20">
-                        <AlertCircle size={20} className="text-amber-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-amber-700">
-                          {stats.pendingPayments} Pending Payment{stats.pendingPayments > 1 ? 's' : ''}
-                        </p>
-                        <p className="text-xs text-amber-600 mt-1">
-                          Collection needed from members
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="mt-3 h-8 text-amber-600 hover:bg-amber-600/10"
-                          onClick={() => router.push('/history')}
-                        >
-                          View Members
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {stats.expiringThisMonth > 0 && (
-                <Card className="border-orange-500/30 bg-orange-500/5">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 rounded-lg bg-orange-500/20">
-                        <Calendar size={20} className="text-orange-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-orange-700">
-                          {stats.expiringThisMonth} Expiring This Month
-                        </p>
-                        <p className="text-xs text-orange-600 mt-1">
-                          Subscriptions set to expire soon
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="mt-3 h-8 text-orange-600 hover:bg-orange-600/10"
-                          onClick={() => router.push('/seat-map')}
-                        >
-                          Check Seats
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="gap-2 h-10"
-                  onClick={() => router.push('/seat-map')}
-                >
-                  <Plus size={16} />
-                  New Booking
-                </Button>
-                <Button
-                  variant="outline"
-                  className="gap-2 h-10"
-                  onClick={() => router.push('/student')}
-                >
-                  <Users size={16} />
-                  View Students
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Activities */}
-        <Card className="shadow-sm lg:h-fit">
-          <CardHeader>
-            <CardTitle className="text-lg">Recent Activities</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {activities.length > 0 ? (
+        {/* --- Bento Grid Main Content --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column: Financials & Floors (4 cols) */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Revenue Details */}
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
+                <Receipt className="h-4 w-4" /> Financial Summary
+              </h3>
               <div className="space-y-4">
-                {activities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 pb-4 border-b border-border last:border-0 last:pb-0">
-                    <div className={`p-2 rounded-lg ${
-                      activity.type === 'NEW_BOOKING' ? 'bg-emerald-500/10 text-emerald-600' :
-                      activity.type === 'RENEWAL' ? 'bg-blue-500/10 text-blue-600' :
-                      activity.type === 'EXPIRY' ? 'bg-red-500/10 text-red-600' :
-                      'bg-purple-500/10 text-purple-600'
-                    }`}>
-                      <TrendingUp size={16} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground truncate">
-                          {activity.studentName}
-                        </p>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
-                          {activity.type === 'NEW_BOOKING' ? 'New Booking' :
-                           activity.type === 'RENEWAL' ? 'Renewed' :
-                           activity.type === 'EXPIRY' ? 'Expired' :
-                           'Payment'}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Seat {activity.seatNo} • {activity.floorName}
-                      </p>
-                      {activity.amount && (
-                        <p className="text-xs font-semibold text-foreground mt-1">
-                          ₹{activity.amount.toLocaleString()}
-                        </p>
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-xs text-zinc-500 mb-1">
+                      Expected Revenue
+                    </p>
+                    <p className="text-2xl font-black">
+                      ₹{data.revenue.expectedMonthlyRevenue.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-zinc-500 mb-1">Collected</p>
+                    <p className="text-sm font-bold text-emerald-600">
+                      {Math.round(
+                        (data.revenue.collectedRevenue /
+                          Math.max(data.revenue.expectedMonthlyRevenue, 1)) *
+                          100,
                       )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(activity.timestamp).toLocaleDateString()}
-                      </p>
+                      %
+                    </p>
+                  </div>
+                </div>
+                {/* Revenue Progress Bar */}
+                <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+                  <div
+                    className="h-full bg-emerald-500"
+                    style={{
+                      width: `${(data.revenue.collectedRevenue / Math.max(data.revenue.expectedMonthlyRevenue, 1)) * 100}%`,
+                    }}
+                  />
+                  <div
+                    className="h-full bg-amber-400"
+                    style={{
+                      width: `${(data.revenue.pendingRevenue / Math.max(data.revenue.expectedMonthlyRevenue, 1)) * 100}%`,
+                    }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                  <div>
+                    <p className="text-[10px] uppercase text-zinc-500 font-semibold">
+                      Pending Due
+                    </p>
+                    <p className="text-sm font-bold text-amber-600">
+                      ₹{data.revenue.pendingRevenue.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase text-zinc-500 font-semibold">
+                      Discounts Given
+                    </p>
+                    <p className="text-sm font-bold text-rose-500">
+                      ₹{data.revenue.totalDiscountsGiven.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Floor Occupancy */}
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
+                <Layers className="h-4 w-4" /> Physical Floor Usage
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-semibold">
+                    Overall Capacity
+                  </span>
+                  <span className="text-xs font-bold">
+                    {data.occupancyOverview.overallOccupancyRate}%
+                  </span>
+                </div>
+                {data.floorOccupancy.map((floor) => (
+                  <div key={floor.floorId} className="group">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                        {floor.floorName}
+                      </span>
+                      <span className="text-zinc-500">
+                        {floor.uniqueOccupiedSeats} / {floor.totalSeats}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${
+                          floor.uniqueOccupiedSeats / floor.totalSeats > 0.85
+                            ? "bg-rose-500"
+                            : "bg-indigo-500"
+                        }`}
+                        style={{
+                          width: `${(floor.uniqueOccupiedSeats / floor.totalSeats) * 100}%`,
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No recent activities
-              </p>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+
+          {/* Middle Column: Shift Analytics (4 cols) */}
+          <div className="lg:col-span-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm flex flex-col">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" /> Shift Performance
+              </div>
+              <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md text-zinc-600">
+                SLOTS: {data.occupancyOverview.occupiedSlots}/
+                {data.occupancyOverview.totalCapacitySlots}
+              </span>
+            </h3>
+            <div className="flex-1 space-y-4 overflow-y-auto pr-1 custom-scrollbar">
+              {data.shiftAnalytics.map((shift) => (
+                <div
+                  key={shift.shiftId}
+                  className="p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/50 hover:border-indigo-200 dark:hover:border-indigo-900 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                        {shift.shiftName}
+                      </h4>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wide">
+                        ₹{shift.shiftPrice} / Seat
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-black">
+                        {shift.occupancyRate}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-2">
+                    <div
+                      className={`h-full rounded-full ${shift.occupancyRate > 90 ? "bg-emerald-500" : "bg-blue-500"}`}
+                      style={{ width: `${shift.occupancyRate}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs text-zinc-500 font-medium">
+                      {shift.occupiedSeats} / {shift.totalSeats} Booked
+                    </span>
+                    <span className="text-xs font-bold text-emerald-600">
+                      +₹{shift.revenueGenerated.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Column: Actionable Lists (4 cols) */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
+            {/* Expiring Soon */}
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-orange-200 dark:border-orange-900/30 shadow-sm flex-1 flex flex-col">
+              <div className="p-4 border-b border-orange-100 dark:border-orange-900/20 bg-orange-50/50 dark:bg-orange-500/5 rounded-t-2xl flex justify-between items-center">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-orange-600 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" /> Renewals Due
+                </h3>
+                <span className="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                  {data.actionableLists.expiringSoon.length}
+                </span>
+              </div>
+              <div className="p-2 flex-1 overflow-y-auto">
+                {data.actionableLists.expiringSoon.length === 0 ? (
+                  <p className="text-sm text-zinc-500 text-center py-8">
+                    No immediate renewals needed.
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    {data.actionableLists.expiringSoon.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="flex items-center justify-between p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg group"
+                      >
+                        <div>
+                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                            {sub.studentName}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            {sub.studentPhone}
+                          </p>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <span
+                            className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${
+                              sub.daysRemaining <= 2
+                                ? "bg-rose-100 text-rose-700"
+                                : "bg-orange-100 text-orange-700"
+                            }`}
+                          >
+                            {sub.daysRemaining} days left
+                          </span>
+                          <Button
+                            size={"icon"}
+                            variant={"outline"}
+                            onClick={() =>
+                              router.push(`/student/${sub.studentId}`)
+                            }
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* --- Full Width Bottom: Recent Subscriptions --- */}
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" /> Recent Admissions
+            </h3>
+            <button className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+              View All
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-zinc-50 dark:bg-zinc-900/50 text-xs uppercase text-zinc-500 tracking-wider">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">Student</th>
+                  <th className="px-5 py-3 font-semibold">Seat & Floor</th>
+                  <th className="px-5 py-3 font-semibold">Shift Details</th>
+                  <th className="px-5 py-3 font-semibold">Duration</th>
+                  <th className="px-5 py-3 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                {data.actionableLists.recentSubscriptions.map((sub) => (
+                  <tr
+                    key={sub.id}
+                    className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
+                  >
+                    <td className="px-5 py-3">
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                        {sub.studentName}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded text-xs font-semibold">
+                          S-{sub.seatNo}
+                        </span>
+                        <span className="text-xs text-zinc-500">
+                          {sub.floorName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex gap-1">
+                        {sub.shiftName && sub.shiftName.length > 0 ? (
+                          sub.shiftName.map((shift, idx) => (
+                            <span
+                              key={idx}
+                              className="border border-zinc-200 dark:border-zinc-700 text-[10px] px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400"
+                            >
+                              {shift}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-zinc-400">-</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-xs text-zinc-500 font-medium">
+                      {new Date(sub.startDate).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      →{" "}
+                      {new Date(sub.endDate).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </td>
+                    <td className="px-5 py-3">
+                      <StatusBadge status={sub.paymentStatus} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function StatCard({ title, value, subtitle, icon, bgColor }: any) {
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-sm flex items-start gap-4">
+      <div className={`p-3 rounded-xl ${bgColor}`}>
+        {React.cloneElement(icon, {
+          className: `h-5 w-5 ${icon.props.className}`,
+        })}
+      </div>
+      <div>
+        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">
+          {title}
+        </p>
+        <h3 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-zinc-50 leading-none">
+          {value}
+        </h3>
+        <div className="text-xs text-zinc-500 mt-1.5 font-medium">
+          {subtitle}
+        </div>
       </div>
     </div>
   );
 }
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: any = {
+    PAID: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20",
+    PARTIAL:
+      "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20",
+    UNPAID:
+      "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20",
+  };
+  return (
+    <span
+      className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${styles[status]}`}
+    >
+      {status}
+    </span>
+  );
+}
+

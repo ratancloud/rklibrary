@@ -232,7 +232,7 @@ export default function StudentTable() {
 
     if (latestSub.status !== "ACTIVE" || daysLeft < 0) {
       return {
-        label: `Expired ${Math.abs(daysLeft)} days ago`,
+        label: `Expired ${Math.abs(daysLeft) + 1} days ago`,
         color: "bg-destructive/10 text-destructive border-destructive/20",
       };
     }
@@ -371,11 +371,7 @@ export default function StudentTable() {
         const latestSub = row.original.subscriptions[0];
         if (!latestSub)
           return <span className="text-muted-foreground text-xs">-</span>;
-
-        const daysLeft = differenceInDays(
-          new Date(latestSub.endDate),
-          new Date(),
-        );
+        
         const subStatus = getSubStatus(row.original.subscriptions);
 
         return (
@@ -389,11 +385,7 @@ export default function StudentTable() {
                 subStatus.color,
               )}
             >
-              {daysLeft < 0
-                ? `Expired ${Math.abs(daysLeft)}d`
-                : daysLeft <= 3
-                  ? `${daysLeft}d left`
-                  : `Active`}
+              {subStatus.label}
             </Badge>
           </div>
         );
