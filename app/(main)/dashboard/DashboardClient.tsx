@@ -14,6 +14,9 @@ import {
   Receipt,
   UserPlus,
   Home,
+  Eye,
+  EyeOff,
+  Phone,
 } from "lucide-react";
 import MonthPicker from "@/components/MonthPicker";
 import type { MonthlyDashboardResponse } from "@/types/dashboard";
@@ -29,6 +32,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatCard } from "@/components/dashboard/StatCard";
 
 const fetchDashboardData = async (
   year: number,
@@ -40,6 +44,7 @@ const fetchDashboardData = async (
 };
 
 export default function CompactDashboard() {
+  const [hide, setHide] = useState(true);
   const router = useRouter();
   const now = new Date();
   const [monthValue, setMonthValue] = useState(
@@ -54,7 +59,7 @@ export default function CompactDashboard() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["dashboard", year, month],
     queryFn: () => fetchDashboardData(year, month),
-    staleTime: 1000 * 60, // 
+    staleTime: 1000 * 60, //
   });
 
   if (isLoading) {
@@ -75,9 +80,9 @@ export default function CompactDashboard() {
         </div>
         <Skeleton className="h-96 rounded-2xl" />
       </div>
-    )
+    );
   }
-  
+
   if (isError || !data)
     return (
       <div className="p-8 text-center text-red-500">
@@ -108,7 +113,16 @@ export default function CompactDashboard() {
         </Breadcrumb>
 
         {/* Month Picker */}
-        <MonthPicker value={monthValue} onChange={setMonthValue} />
+        <div className="flex items-center justify-between gap-2">
+          <MonthPicker value={monthValue} onChange={setMonthValue} />
+          <Button variant="outline" size="icon" onClick={() => setHide(!hide)}>
+            {hide ? (
+              <Eye className="h-4 w-4" />
+            ) : (
+              <EyeOff className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -149,6 +163,7 @@ export default function CompactDashboard() {
             }
             icon={<IndianRupee className="text-blue-600" />}
             bgColor="bg-blue-50 dark:bg-blue-500/10"
+            hide={hide}
           />
           <StatCard
             title="Expiring Soon"
@@ -187,7 +202,9 @@ export default function CompactDashboard() {
                       Expected Revenue
                     </p>
                     <p className="text-2xl font-black">
-                      ₹{data.revenue.expectedMonthlyRevenue.toLocaleString()}
+                      {hide
+                        ? "••••••"
+                        : `₹${data.revenue.expectedMonthlyRevenue.toLocaleString()}`}
                     </p>
                   </div>
                   <div className="text-right">
@@ -224,7 +241,9 @@ export default function CompactDashboard() {
                       Pending Due
                     </p>
                     <p className="text-sm font-bold text-amber-600">
-                      ₹{data.revenue.pendingRevenue.toLocaleString()}
+                      {hide
+                        ? "••••••"
+                        : `₹${data.revenue.pendingRevenue.toLocaleString()}`}
                     </p>
                   </div>
                   <div>
@@ -232,7 +251,9 @@ export default function CompactDashboard() {
                       Discounts Given
                     </p>
                     <p className="text-sm font-bold text-rose-500">
-                      ₹{data.revenue.totalDiscountsGiven.toLocaleString()}
+                      {hide
+                        ? "••••••"
+                        : `₹${data.revenue.totalDiscountsGiven.toLocaleString()}`}
                     </p>
                   </div>
                 </div>
@@ -324,7 +345,9 @@ export default function CompactDashboard() {
                       {shift.occupiedSeats} / {shift.totalSeats} Booked
                     </span>
                     <span className="text-xs font-bold text-emerald-600">
-                      +₹{shift.revenueGenerated.toLocaleString()}
+                      {hide
+                        ? "••••••"
+                        : `+₹${shift.revenueGenerated.toLocaleString()}`}
                     </span>
                   </div>
                 </div>
@@ -338,7 +361,7 @@ export default function CompactDashboard() {
             <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-orange-200 dark:border-orange-900/30 shadow-sm flex-1 flex flex-col">
               <div className="p-4 border-b border-orange-100 dark:border-orange-900/20 bg-orange-50/50 dark:bg-orange-500/5 rounded-t-2xl flex justify-between items-center">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-orange-600 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" /> Renewals Due
+                  <AlertCircle className="h-4 w-4" /> Renewals Sub
                 </h3>
                 <span className="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded-full font-bold">
                   {data.actionableLists.expiringSoon.length}
@@ -360,9 +383,13 @@ export default function CompactDashboard() {
                           <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                             {sub.studentName}
                           </p>
-                          <p className="text-xs text-zinc-500">
-                            {sub.studentPhone}
-                          </p>
+                          {/* Changed to anchor tag with tel: protocol */}
+                          <a
+                            href={`tel:${sub.studentPhone}`}
+                            className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5 w-fit hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <Phone className="h-3 w-3" /> {sub.studentPhone}
+                          </a>
                         </div>
                         <div className="text-right flex items-center gap-3">
                           <span
@@ -476,29 +503,6 @@ export default function CompactDashboard() {
   );
 }
 
-function StatCard({ title, value, subtitle, icon, bgColor }: any) {
-  return (
-    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-sm flex items-start gap-4">
-      <div className={`p-3 rounded-xl ${bgColor}`}>
-        {React.cloneElement(icon, {
-          className: `h-5 w-5 ${icon.props.className}`,
-        })}
-      </div>
-      <div>
-        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-          {title}
-        </p>
-        <h3 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-zinc-50 leading-none">
-          {value}
-        </h3>
-        <div className="text-xs text-zinc-500 mt-1.5 font-medium">
-          {subtitle}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function StatusBadge({ status }: { status: string }) {
   const styles: any = {
     PAID: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20",
@@ -515,4 +519,3 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-
