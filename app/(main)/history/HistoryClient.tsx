@@ -27,7 +27,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { History, Search, FileText, X, Home, Trash2 } from "lucide-react";
+import {
+  History,
+  Search,
+  FileText,
+  X,
+  Home,
+  Trash2,
+  ChevronDown,
+} from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
@@ -49,6 +57,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import MonthPicker from "@/components/MonthPicker";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DocumentPreviewDialog } from "@/components/students/DocumentPreviewDialog";
 
 // Types
 interface HistoryRecord {
@@ -69,6 +79,7 @@ interface HistoryRecord {
   status: string;
   createdAt: string;
   memberIdFormatted: string;
+  profileImageUrl: string | null;
 }
 
 interface HistoryResponse {
@@ -116,16 +127,22 @@ const STATUS_CONFIG: Record<
 };
 
 const columnHelper = createColumnHelper<HistoryRecord>();
+const SHIFT_OPTIONS = ["MORNING", "AFTERNOON", "EVENING", "NIGHT"];
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function HistoryClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [selectedShifts, setSelectedShifts] = useState<string[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH_VALUE);
   const [page, setPage] = useState(1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [subscriptionToDelete, setSubscriptionToDelete] = useState<HistoryRecord | null>(null);
+  const [subscriptionToDelete, setSubscriptionToDelete] =
+    useState<HistoryRecord | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState<string>("");
   const pageSize = 10;
   const queryClient = useQueryClient();
 
@@ -142,24 +159,28 @@ export default function HistoryClient() {
       const res = await fetch(`/api/history/${subscriptionId}`, {
         method: "DELETE",
       });
-      
+
       if (!res.ok) {
         throw new Error("Failed to delete subscription");
       }
-      
+
       return res.json();
     },
     onSuccess: () => {
       toast.success("Subscription deleted successfully");
       setDeleteDialogOpen(false);
       setSubscriptionToDelete(null);
-    
+
       queryClient.invalidateQueries({
         queryKey: ["history"],
       });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to delete subscription");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete subscription",
+      );
     },
   });
 
@@ -175,6 +196,7 @@ export default function HistoryClient() {
       month: selectedMonth,
       ...(debouncedSearch && { search: debouncedSearch }),
       ...(statusFilter !== "ALL" && { status: statusFilter }),
+      ...(selectedShifts.length > 0 && { shifts: selectedShifts.join(",") }),
     });
     const res = await fetch(`/api/history?${params}`);
     if (!res.ok) throw new Error("Failed to fetch history");
@@ -184,11 +206,18 @@ export default function HistoryClient() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [
       "history",
-      { page, pageSize, selectedMonth, debouncedSearch, statusFilter },
+      {
+        page,
+        pageSize,
+        selectedMonth,
+        debouncedSearch,
+        statusFilter,
+        selectedShifts,
+      },
     ],
     queryFn: fetchHistory,
     placeholderData: (prev) => prev,
-    staleTime: 1000 * 60 * 5, 
+    staleTime: 1000 * 60 * 5,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -251,9 +280,24 @@ export default function HistoryClient() {
         header: "Student",
         cell: (info) => (
           <div className="flex items-center gap-2.5 min-w-37.5">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">
-              {info.getValue().charAt(0).toUpperCase()}
-            </div>
+            <Avatar
+              onClick={() => {
+                setPreviewImage(info.row.original.profileImageUrl);
+                setPreviewTitle(
+                  info.row.original.studentName + "'s Profile Picture",
+                );
+                setPreviewOpen(true);
+              }}
+              className="h-8 w-8 border border-border md:h-10 md:w-10 shrink-0"
+            >
+              <AvatarImage
+                src={info.row.original.profileImageUrl || ""}
+                alt={info.row.original.studentName + " profile picture"}
+              />
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs md:text-sm uppercase">
+                {info.row.original.studentName?.charAt(0) || "?"}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <p className="font-semibold text-sm leading-tight">
                 {info.getValue()}
@@ -307,17 +351,23 @@ export default function HistoryClient() {
             <div className="flex flex-col gap-1.5 min-w-32">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Total:</span>
-                <span className="text-sm font-semibold">₹{total.toLocaleString()}</span>
+                <span className="text-sm font-semibold">
+                  ₹{total.toLocaleString()}
+                </span>
               </div>
               {discount > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-destructive">Discount:</span>
-                  <span className="text-sm font-semibold text-destructive">-₹{discount.toLocaleString()}</span>
+                  <span className="text-sm font-semibold text-destructive">
+                    -₹{discount.toLocaleString()}
+                  </span>
                 </div>
               )}
               <div className="pt-1 border-t flex items-center justify-between">
                 <span className="text-xs font-semibold">Final:</span>
-                <span className="text-sm font-bold text-primary">₹{finalAmount.toLocaleString()}</span>
+                <span className="text-sm font-bold text-primary">
+                  ₹{finalAmount.toLocaleString()}
+                </span>
               </div>
             </div>
           );
@@ -434,6 +484,7 @@ export default function HistoryClient() {
         month: selectedMonth,
         ...(debouncedSearch && { search: debouncedSearch }),
         ...(statusFilter !== "ALL" && { status: statusFilter }),
+        ...(selectedShifts.length > 0 && { shifts: selectedShifts.join(",") }),
         export: "true",
       });
       const res = await fetch(`/api/history?${params}`);
@@ -531,6 +582,49 @@ export default function HistoryClient() {
             </SelectContent>
           </Select>
 
+          {/* Shift Filter Dropdown */}
+          <div className="relative group w-full xl:w-auto">
+            <button className="w-full xl:w-auto flex items-center justify-between gap-2 px-3 py-2 bg-muted/40 border rounded-md text-sm hover:bg-muted/60 transition-colors">
+              <span>
+                {selectedShifts.length === 0
+                  ? "All Shifts"
+                  : selectedShifts.length === 1
+                    ? selectedShifts[0]
+                    : `${selectedShifts.length} Shifts`}
+              </span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+
+            {/* Dropdown Menu */}
+            <div className="absolute top-full left-0 mt-1 bg-card border rounded-md shadow-lg z-50 hidden group-hover:block p-2 min-w-48">
+              <div className="space-y-2">
+                {SHIFT_OPTIONS.map((shift) => (
+                  <label
+                    key={shift}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedShifts.includes(shift)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedShifts([...selectedShifts, shift]);
+                        } else {
+                          setSelectedShifts(
+                            selectedShifts.filter((s) => s !== shift),
+                          );
+                        }
+                        setPage(1);
+                      }}
+                      className="w-4 h-4 rounded cursor-pointer"
+                    />
+                    <span className="text-sm font-medium">{shift}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="xl:ml-auto flex items-center gap-2 flex-wrap">
             {statusFilter !== "ALL" && (
               <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
@@ -540,6 +634,24 @@ export default function HistoryClient() {
                 </button>
               </span>
             )}
+            {selectedShifts.map((shift) => (
+              <span
+                key={shift}
+                className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
+              >
+                {shift}
+                <button
+                  onClick={() => {
+                    setSelectedShifts(
+                      selectedShifts.filter((s) => s !== shift),
+                    );
+                    setPage(1);
+                  }}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
             {debouncedSearch && (
               <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
                 &quot;{debouncedSearch}&quot;
@@ -666,6 +778,13 @@ export default function HistoryClient() {
         </div>
       </div>
 
+      <DocumentPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        imageUrl={previewImage}
+        title={previewTitle}
+      />
+
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -679,11 +798,31 @@ export default function HistoryClient() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="rounded-lg bg-muted p-3">
-            <p className="text-xs text-muted-foreground mb-2">Subscription Details:</p>
+            <p className="text-xs text-muted-foreground mb-2">
+              Subscription Details:
+            </p>
             <div className="space-y-1 text-sm">
-              <p><span className="font-medium">Member ID:</span> {subscriptionToDelete?.memberIdFormatted}</p>
-              <p><span className="font-medium">Seat:</span> {subscriptionToDelete?.floorName} · Seat {subscriptionToDelete?.seatNo}</p>
-              <p><span className="font-medium">Period:</span> {subscriptionToDelete?.startDate && new Date(subscriptionToDelete.startDate).toLocaleDateString('en-GB')} to {subscriptionToDelete?.endDate && new Date(subscriptionToDelete.endDate).toLocaleDateString('en-GB')}</p>
+              <p>
+                <span className="font-medium">Member ID:</span>{" "}
+                {subscriptionToDelete?.memberIdFormatted}
+              </p>
+              <p>
+                <span className="font-medium">Seat:</span>{" "}
+                {subscriptionToDelete?.floorName} · Seat{" "}
+                {subscriptionToDelete?.seatNo}
+              </p>
+              <p>
+                <span className="font-medium">Period:</span>{" "}
+                {subscriptionToDelete?.startDate &&
+                  new Date(subscriptionToDelete.startDate).toLocaleDateString(
+                    "en-GB",
+                  )}{" "}
+                to{" "}
+                {subscriptionToDelete?.endDate &&
+                  new Date(subscriptionToDelete.endDate).toLocaleDateString(
+                    "en-GB",
+                  )}
+              </p>
             </div>
           </div>
           <div className="flex justify-end gap-3">

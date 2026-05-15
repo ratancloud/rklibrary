@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search')?.toLowerCase() || '';
     const status = searchParams.get('status') || 'ALL';
+    const shiftsParam = searchParams.get('shifts');
+    const selectedShifts = shiftsParam ? shiftsParam.split(',') : [];
     const monthYear = searchParams.get('month') || new Date().toISOString().slice(0, 7); // Format: YYYY-MM
     const isExport = searchParams.get('export') === 'true';
     
@@ -57,6 +59,12 @@ export async function GET(request: NextRequest) {
       whereClause.status = status;
     }
 
+    if (selectedShifts.length > 0) {
+      whereClause.shiftName = {
+        hasEvery: selectedShifts,
+      };
+    }
+
     const subscriptions = await prisma.subscription.findMany({
       where: whereClause,
       select: {
@@ -77,7 +85,7 @@ export async function GET(request: NextRequest) {
         status: true,
         createdAt: true,
         student: {
-          select: { memberId: true }
+          select: { memberId: true, profileImageUrl: true },
         }
       },
       orderBy: { createdAt: 'desc' },
@@ -105,6 +113,7 @@ export async function GET(request: NextRequest) {
       amountPaid: sub.amountPaid,
       status: sub.status,
       createdAt: sub.createdAt.toISOString(),
+      profileImageUrl: sub.student?.profileImageUrl || null,
       memberIdFormatted: sub.student?.memberId 
         ? `MID${String(sub.student.memberId).padStart(4, '0')}` 
         : 'N/A',

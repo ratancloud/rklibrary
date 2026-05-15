@@ -240,7 +240,7 @@ export async function GET(req: NextRequest) {
       revenue: {
         expectedMonthlyRevenue,
         collectedRevenue,
-        pendingRevenue: expectedMonthlyRevenue - collectedRevenue,
+        pendingRevenue: expectedMonthlyRevenue - collectedRevenue - totalDiscountsGiven,
         totalDiscountsGiven,
       },
       occupancyOverview: {
