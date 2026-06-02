@@ -261,7 +261,7 @@ export default function CompactDashboard() {
             </div>
 
             {/* Floor Occupancy */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm">
+            {/* <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm">
               <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
                 <Layers className="h-4 w-4" /> Physical Floor Usage
               </h3>
@@ -299,7 +299,7 @@ export default function CompactDashboard() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Middle Column: Shift Analytics (4 cols) */}
@@ -344,11 +344,11 @@ export default function CompactDashboard() {
                     <span className="text-xs text-zinc-500 font-medium">
                       {shift.occupiedSeats} / {shift.totalSeats} Booked
                     </span>
-                    <span className="text-xs font-bold text-emerald-600">
+                    {/* <span className="text-xs font-bold text-emerald-600">
                       {hide
                         ? "••••••"
                         : `+₹${shift.revenueGenerated.toLocaleString()}`}
-                    </span>
+                    </span> */}
                   </div>
                 </div>
               ))}
@@ -426,9 +426,9 @@ export default function CompactDashboard() {
             <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
               <CalendarDays className="h-4 w-4" /> Recent Admissions
             </h3>
-            <button className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+            <Link href="/history" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
               View All
-            </button>
+            </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
@@ -448,9 +448,9 @@ export default function CompactDashboard() {
                     className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
                   >
                     <td className="px-5 py-3">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                      <Button  variant="link" onClick={() => router.push(`/student/${sub.studentId}`)} className="font-bold text-zinc-900 dark:text-zinc-100 hover:no-underline">
                         {sub.studentName}
-                      </span>
+                      </Button>
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">

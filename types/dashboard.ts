@@ -46,12 +46,14 @@ export interface MonthlyDashboardResponse {
 export interface RecentSubscription {
   id: string;
   studentName: string;
+  studentId: string;
   floorName: string;
   seatNo: number;
   shiftName: string[];
   startDate: string;
   endDate: string;
   amountPaid: number;
+  discount: number;
   paymentStatus: "PAID" | "PARTIAL" | "UNPAID"; 
   status: string;
 }

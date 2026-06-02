@@ -125,11 +125,13 @@ export async function GET(req: NextRequest) {
         select: {
           id: true,
           studentName: true,
+          studentId: true,
           floorName: true,
           seatNo: true,
           shiftName: true,
           startDate: true,
           endDate: true,
+          discount: true,
           totalAmount: true,
           amountPaid: true,
           status: true,
@@ -216,7 +218,7 @@ export async function GET(req: NextRequest) {
     const formattedRecentSubscriptions = recentSubscriptionsData.map((sub) => ({
       ...sub,
       paymentStatus:
-        sub.amountPaid >= sub.totalAmount && sub.totalAmount > 0
+        sub.amountPaid >= (sub.totalAmount - sub.discount) && sub.totalAmount > 0
           ? "PAID"
           : sub.amountPaid > 0
             ? "PARTIAL"
