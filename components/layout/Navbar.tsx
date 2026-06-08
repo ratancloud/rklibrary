@@ -12,7 +12,6 @@ import {
   Home,
   Settings,
   Bell,
-  MessageSquare,
   GraduationCap,
   FileSpreadsheetIcon,
   HistoryIcon,
@@ -20,6 +19,7 @@ import {
   Zap,
   MessageCircle,
   GalleryHorizontal,
+  DollarSign,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -67,8 +67,8 @@ export default function Navbar() {
         { name: "Booking", href: "/seat-map", icon: FileSpreadsheetIcon },
         { name: "Student", href: "/student", icon: GraduationCap },
         { name: "History", href: "/history", icon: HistoryIcon },
+        { name: "Expenses", href: "/expenses", icon: DollarSign},
         { name: "Request", href: "/inquiry-request", icon: Bell },
-        { name: "Inquiry", href: "/inquiry", icon: MessageSquare },
       ]
     : [
         { name: "Home", href: "/", icon: Home },
