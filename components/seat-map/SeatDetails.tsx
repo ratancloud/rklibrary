@@ -1,18 +1,9 @@
 import React from "react";
-import {
-  X,
-  Search,
-  Info,
-  AlertCircle,
-  Zap,
-} from "lucide-react";
+import { X, Search, Info, AlertCircle, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import {
-  SeatInfo,
-  formatShiftName,
-} from "@/types/seatMapTypes";
+import { SeatInfo, formatShiftName } from "@/types/seatMapTypes";
 import { useRouter } from "next/navigation";
 import { ShiftCard } from "./ShiftCard";
 import { VacantShiftCard } from "./VacantShiftCard";
@@ -204,16 +195,25 @@ export function SeatDetails({
                 </p>
               </div>
               {!isInactive && (
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={() =>
-                    router.push(
-                      `/booking?seatId=${data.id}&shift=${selectedShift}`,
-                    )
-                  }
-                >
-                  Book Seat {seatNo}
-                </Button>
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    onClick={() =>
+                      router.push(`/seat-assigned?seatId=${data.id}`)
+                    }
+                  >
+                    Add to seat {seatNo}
+                  </Button>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() =>
+                      router.push(
+                        `/booking?seatId=${data.id}&shift=${selectedShift}`,
+                      )
+                    }
+                  >
+                    Book Seat {seatNo}
+                  </Button>
+                </div>
               )}
             </div>
           );
