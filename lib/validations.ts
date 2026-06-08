@@ -140,3 +140,27 @@ export const studentRegistrationSchema = studentSchema.extend({
 });
 
 export type StudentRegistration = z.infer<typeof studentRegistrationSchema>;
+
+// --- Expense Validation ---
+
+export const ExpenseCategoryEnum = z.enum([
+  "RENT", "ELECTRICITY", "WATER", "INTERNET", 
+  "MAINTENANCE", "SALARY", "MARKETING", "SUPPLIES", "OTHER"
+]);
+
+// Schema for creating a new expense
+export const createExpenseSchema = z.object({
+  title: z.string().min(1, "Title is required").max(255),
+  description: z.string().optional(),
+  amount: z.number().int("Amount must be an integer").positive("Amount must be positive"),
+  category: ExpenseCategoryEnum.default("OTHER"),
+  date: z.string().optional().transform((val) => (val ? new Date(val) : new Date())),
+});
+
+// Schema for updating an existing expense (all fields optional)
+export const updateExpenseSchema = createExpenseSchema.partial();
+
+// Export TypeScript types inferred from the Zod schemas
+export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
+export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
+export type ExpenseCategory = z.infer<typeof ExpenseCategoryEnum>;
