@@ -77,3 +77,8 @@ export type SeatAssignment = Prisma.SeatAssignmentModel
  * 
  */
 export type Inquiry = Prisma.InquiryModel
+/**
+ * Model Expense
+ * 
+ */
+export type Expense = Prisma.ExpenseModel

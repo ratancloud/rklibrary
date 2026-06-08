@@ -62,7 +62,8 @@ export const ModelName = {
   Student: 'Student',
   Subscription: 'Subscription',
   SeatAssignment: 'SeatAssignment',
-  Inquiry: 'Inquiry'
+  Inquiry: 'Inquiry',
+  Expense: 'Expense'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -277,6 +278,21 @@ export const InquiryScalarFieldEnum = {
 } as const
 
 export type InquiryScalarFieldEnum = (typeof InquiryScalarFieldEnum)[keyof typeof InquiryScalarFieldEnum]
+
+
+export const ExpenseScalarFieldEnum = {
+  id: 'id',
+  libraryId: 'libraryId',
+  title: 'title',
+  description: 'description',
+  amount: 'amount',
+  category: 'category',
+  date: 'date',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ExpenseScalarFieldEnum = (typeof ExpenseScalarFieldEnum)[keyof typeof ExpenseScalarFieldEnum]
 
 
 export const SortOrder = {

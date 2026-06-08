@@ -239,6 +239,7 @@ export type LibraryWhereInput = {
   shifts?: Prisma.ShiftListRelationFilter
   students?: Prisma.StudentListRelationFilter
   subscriptions?: Prisma.SubscriptionListRelationFilter
+  expenses?: Prisma.ExpenseListRelationFilter
 }
 
 export type LibraryOrderByWithRelationInput = {
@@ -259,6 +260,7 @@ export type LibraryOrderByWithRelationInput = {
   shifts?: Prisma.ShiftOrderByRelationAggregateInput
   students?: Prisma.StudentOrderByRelationAggregateInput
   subscriptions?: Prisma.SubscriptionOrderByRelationAggregateInput
+  expenses?: Prisma.ExpenseOrderByRelationAggregateInput
 }
 
 export type LibraryWhereUniqueInput = Prisma.AtLeast<{
@@ -283,6 +285,7 @@ export type LibraryWhereUniqueInput = Prisma.AtLeast<{
   shifts?: Prisma.ShiftListRelationFilter
   students?: Prisma.StudentListRelationFilter
   subscriptions?: Prisma.SubscriptionListRelationFilter
+  expenses?: Prisma.ExpenseListRelationFilter
 }, "id" | "userId" | "userId_contactNumber">
 
 export type LibraryOrderByWithAggregationInput = {
@@ -338,6 +341,7 @@ export type LibraryCreateInput = {
   shifts?: Prisma.ShiftCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryUncheckedCreateInput = {
@@ -357,6 +361,7 @@ export type LibraryUncheckedCreateInput = {
   shifts?: Prisma.ShiftUncheckedCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentUncheckedCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryUpdateInput = {
@@ -376,6 +381,7 @@ export type LibraryUpdateInput = {
   shifts?: Prisma.ShiftUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryUncheckedUpdateInput = {
@@ -395,6 +401,7 @@ export type LibraryUncheckedUpdateInput = {
   shifts?: Prisma.ShiftUncheckedUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUncheckedUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUncheckedUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryCreateManyInput = {
@@ -619,6 +626,20 @@ export type LibraryUpdateOneRequiredWithoutSubscriptionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.LibraryUpdateToOneWithWhereWithoutSubscriptionsInput, Prisma.LibraryUpdateWithoutSubscriptionsInput>, Prisma.LibraryUncheckedUpdateWithoutSubscriptionsInput>
 }
 
+export type LibraryCreateNestedOneWithoutExpensesInput = {
+  create?: Prisma.XOR<Prisma.LibraryCreateWithoutExpensesInput, Prisma.LibraryUncheckedCreateWithoutExpensesInput>
+  connectOrCreate?: Prisma.LibraryCreateOrConnectWithoutExpensesInput
+  connect?: Prisma.LibraryWhereUniqueInput
+}
+
+export type LibraryUpdateOneRequiredWithoutExpensesNestedInput = {
+  create?: Prisma.XOR<Prisma.LibraryCreateWithoutExpensesInput, Prisma.LibraryUncheckedCreateWithoutExpensesInput>
+  connectOrCreate?: Prisma.LibraryCreateOrConnectWithoutExpensesInput
+  upsert?: Prisma.LibraryUpsertWithoutExpensesInput
+  connect?: Prisma.LibraryWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.LibraryUpdateToOneWithWhereWithoutExpensesInput, Prisma.LibraryUpdateWithoutExpensesInput>, Prisma.LibraryUncheckedUpdateWithoutExpensesInput>
+}
+
 export type LibraryCreateWithoutUserInput = {
   id?: string
   name: string
@@ -635,6 +656,7 @@ export type LibraryCreateWithoutUserInput = {
   shifts?: Prisma.ShiftCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryUncheckedCreateWithoutUserInput = {
@@ -653,6 +675,7 @@ export type LibraryUncheckedCreateWithoutUserInput = {
   shifts?: Prisma.ShiftUncheckedCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentUncheckedCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryCreateOrConnectWithoutUserInput = {
@@ -715,6 +738,7 @@ export type LibraryCreateWithoutFloorsInput = {
   shifts?: Prisma.ShiftCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryUncheckedCreateWithoutFloorsInput = {
@@ -733,6 +757,7 @@ export type LibraryUncheckedCreateWithoutFloorsInput = {
   shifts?: Prisma.ShiftUncheckedCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentUncheckedCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryCreateOrConnectWithoutFloorsInput = {
@@ -767,6 +792,7 @@ export type LibraryUpdateWithoutFloorsInput = {
   shifts?: Prisma.ShiftUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryUncheckedUpdateWithoutFloorsInput = {
@@ -785,6 +811,7 @@ export type LibraryUncheckedUpdateWithoutFloorsInput = {
   shifts?: Prisma.ShiftUncheckedUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUncheckedUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUncheckedUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryCreateWithoutShiftsInput = {
@@ -803,6 +830,7 @@ export type LibraryCreateWithoutShiftsInput = {
   floors?: Prisma.FloorCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryUncheckedCreateWithoutShiftsInput = {
@@ -821,6 +849,7 @@ export type LibraryUncheckedCreateWithoutShiftsInput = {
   floors?: Prisma.FloorUncheckedCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentUncheckedCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryCreateOrConnectWithoutShiftsInput = {
@@ -855,6 +884,7 @@ export type LibraryUpdateWithoutShiftsInput = {
   floors?: Prisma.FloorUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryUncheckedUpdateWithoutShiftsInput = {
@@ -873,6 +903,7 @@ export type LibraryUncheckedUpdateWithoutShiftsInput = {
   floors?: Prisma.FloorUncheckedUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUncheckedUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUncheckedUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryCreateWithoutStudentsInput = {
@@ -891,6 +922,7 @@ export type LibraryCreateWithoutStudentsInput = {
   floors?: Prisma.FloorCreateNestedManyWithoutLibraryInput
   shifts?: Prisma.ShiftCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryUncheckedCreateWithoutStudentsInput = {
@@ -909,6 +941,7 @@ export type LibraryUncheckedCreateWithoutStudentsInput = {
   floors?: Prisma.FloorUncheckedCreateNestedManyWithoutLibraryInput
   shifts?: Prisma.ShiftUncheckedCreateNestedManyWithoutLibraryInput
   subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryCreateOrConnectWithoutStudentsInput = {
@@ -943,6 +976,7 @@ export type LibraryUpdateWithoutStudentsInput = {
   floors?: Prisma.FloorUpdateManyWithoutLibraryNestedInput
   shifts?: Prisma.ShiftUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryUncheckedUpdateWithoutStudentsInput = {
@@ -961,6 +995,7 @@ export type LibraryUncheckedUpdateWithoutStudentsInput = {
   floors?: Prisma.FloorUncheckedUpdateManyWithoutLibraryNestedInput
   shifts?: Prisma.ShiftUncheckedUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUncheckedUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryCreateWithoutSubscriptionsInput = {
@@ -979,6 +1014,7 @@ export type LibraryCreateWithoutSubscriptionsInput = {
   floors?: Prisma.FloorCreateNestedManyWithoutLibraryInput
   shifts?: Prisma.ShiftCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryUncheckedCreateWithoutSubscriptionsInput = {
@@ -997,6 +1033,7 @@ export type LibraryUncheckedCreateWithoutSubscriptionsInput = {
   floors?: Prisma.FloorUncheckedCreateNestedManyWithoutLibraryInput
   shifts?: Prisma.ShiftUncheckedCreateNestedManyWithoutLibraryInput
   students?: Prisma.StudentUncheckedCreateNestedManyWithoutLibraryInput
+  expenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutLibraryInput
 }
 
 export type LibraryCreateOrConnectWithoutSubscriptionsInput = {
@@ -1031,6 +1068,7 @@ export type LibraryUpdateWithoutSubscriptionsInput = {
   floors?: Prisma.FloorUpdateManyWithoutLibraryNestedInput
   shifts?: Prisma.ShiftUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryUncheckedUpdateWithoutSubscriptionsInput = {
@@ -1049,6 +1087,99 @@ export type LibraryUncheckedUpdateWithoutSubscriptionsInput = {
   floors?: Prisma.FloorUncheckedUpdateManyWithoutLibraryNestedInput
   shifts?: Prisma.ShiftUncheckedUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUncheckedUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUncheckedUpdateManyWithoutLibraryNestedInput
+}
+
+export type LibraryCreateWithoutExpensesInput = {
+  id?: string
+  name: string
+  email?: string | null
+  contactNumber: string
+  address: string
+  district: string
+  state: string
+  pincode: string
+  facilities?: Prisma.LibraryCreatefacilitiesInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutLibrariesInput
+  floors?: Prisma.FloorCreateNestedManyWithoutLibraryInput
+  shifts?: Prisma.ShiftCreateNestedManyWithoutLibraryInput
+  students?: Prisma.StudentCreateNestedManyWithoutLibraryInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutLibraryInput
+}
+
+export type LibraryUncheckedCreateWithoutExpensesInput = {
+  id?: string
+  userId: string
+  name: string
+  email?: string | null
+  contactNumber: string
+  address: string
+  district: string
+  state: string
+  pincode: string
+  facilities?: Prisma.LibraryCreatefacilitiesInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  floors?: Prisma.FloorUncheckedCreateNestedManyWithoutLibraryInput
+  shifts?: Prisma.ShiftUncheckedCreateNestedManyWithoutLibraryInput
+  students?: Prisma.StudentUncheckedCreateNestedManyWithoutLibraryInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutLibraryInput
+}
+
+export type LibraryCreateOrConnectWithoutExpensesInput = {
+  where: Prisma.LibraryWhereUniqueInput
+  create: Prisma.XOR<Prisma.LibraryCreateWithoutExpensesInput, Prisma.LibraryUncheckedCreateWithoutExpensesInput>
+}
+
+export type LibraryUpsertWithoutExpensesInput = {
+  update: Prisma.XOR<Prisma.LibraryUpdateWithoutExpensesInput, Prisma.LibraryUncheckedUpdateWithoutExpensesInput>
+  create: Prisma.XOR<Prisma.LibraryCreateWithoutExpensesInput, Prisma.LibraryUncheckedCreateWithoutExpensesInput>
+  where?: Prisma.LibraryWhereInput
+}
+
+export type LibraryUpdateToOneWithWhereWithoutExpensesInput = {
+  where?: Prisma.LibraryWhereInput
+  data: Prisma.XOR<Prisma.LibraryUpdateWithoutExpensesInput, Prisma.LibraryUncheckedUpdateWithoutExpensesInput>
+}
+
+export type LibraryUpdateWithoutExpensesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.StringFieldUpdateOperationsInput | string
+  district?: Prisma.StringFieldUpdateOperationsInput | string
+  state?: Prisma.StringFieldUpdateOperationsInput | string
+  pincode?: Prisma.StringFieldUpdateOperationsInput | string
+  facilities?: Prisma.LibraryUpdatefacilitiesInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutLibrariesNestedInput
+  floors?: Prisma.FloorUpdateManyWithoutLibraryNestedInput
+  shifts?: Prisma.ShiftUpdateManyWithoutLibraryNestedInput
+  students?: Prisma.StudentUpdateManyWithoutLibraryNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutLibraryNestedInput
+}
+
+export type LibraryUncheckedUpdateWithoutExpensesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.StringFieldUpdateOperationsInput | string
+  district?: Prisma.StringFieldUpdateOperationsInput | string
+  state?: Prisma.StringFieldUpdateOperationsInput | string
+  pincode?: Prisma.StringFieldUpdateOperationsInput | string
+  facilities?: Prisma.LibraryUpdatefacilitiesInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  floors?: Prisma.FloorUncheckedUpdateManyWithoutLibraryNestedInput
+  shifts?: Prisma.ShiftUncheckedUpdateManyWithoutLibraryNestedInput
+  students?: Prisma.StudentUncheckedUpdateManyWithoutLibraryNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryCreateManyUserInput = {
@@ -1081,6 +1212,7 @@ export type LibraryUpdateWithoutUserInput = {
   shifts?: Prisma.ShiftUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryUncheckedUpdateWithoutUserInput = {
@@ -1099,6 +1231,7 @@ export type LibraryUncheckedUpdateWithoutUserInput = {
   shifts?: Prisma.ShiftUncheckedUpdateManyWithoutLibraryNestedInput
   students?: Prisma.StudentUncheckedUpdateManyWithoutLibraryNestedInput
   subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutLibraryNestedInput
+  expenses?: Prisma.ExpenseUncheckedUpdateManyWithoutLibraryNestedInput
 }
 
 export type LibraryUncheckedUpdateManyWithoutUserInput = {
@@ -1125,6 +1258,7 @@ export type LibraryCountOutputType = {
   shifts: number
   students: number
   subscriptions: number
+  expenses: number
 }
 
 export type LibraryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1132,6 +1266,7 @@ export type LibraryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   shifts?: boolean | LibraryCountOutputTypeCountShiftsArgs
   students?: boolean | LibraryCountOutputTypeCountStudentsArgs
   subscriptions?: boolean | LibraryCountOutputTypeCountSubscriptionsArgs
+  expenses?: boolean | LibraryCountOutputTypeCountExpensesArgs
 }
 
 /**
@@ -1172,6 +1307,13 @@ export type LibraryCountOutputTypeCountSubscriptionsArgs<ExtArgs extends runtime
   where?: Prisma.SubscriptionWhereInput
 }
 
+/**
+ * LibraryCountOutputType without action
+ */
+export type LibraryCountOutputTypeCountExpensesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ExpenseWhereInput
+}
+
 
 export type LibrarySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1191,6 +1333,7 @@ export type LibrarySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   shifts?: boolean | Prisma.Library$shiftsArgs<ExtArgs>
   students?: boolean | Prisma.Library$studentsArgs<ExtArgs>
   subscriptions?: boolean | Prisma.Library$subscriptionsArgs<ExtArgs>
+  expenses?: boolean | Prisma.Library$expensesArgs<ExtArgs>
   _count?: boolean | Prisma.LibraryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["library"]>
 
@@ -1248,6 +1391,7 @@ export type LibraryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   shifts?: boolean | Prisma.Library$shiftsArgs<ExtArgs>
   students?: boolean | Prisma.Library$studentsArgs<ExtArgs>
   subscriptions?: boolean | Prisma.Library$subscriptionsArgs<ExtArgs>
+  expenses?: boolean | Prisma.Library$expensesArgs<ExtArgs>
   _count?: boolean | Prisma.LibraryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type LibraryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1265,6 +1409,7 @@ export type $LibraryPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     shifts: Prisma.$ShiftPayload<ExtArgs>[]
     students: Prisma.$StudentPayload<ExtArgs>[]
     subscriptions: Prisma.$SubscriptionPayload<ExtArgs>[]
+    expenses: Prisma.$ExpensePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1678,6 +1823,7 @@ export interface Prisma__LibraryClient<T, Null = never, ExtArgs extends runtime.
   shifts<T extends Prisma.Library$shiftsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Library$shiftsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShiftPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   students<T extends Prisma.Library$studentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Library$studentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StudentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   subscriptions<T extends Prisma.Library$subscriptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Library$subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  expenses<T extends Prisma.Library$expensesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Library$expensesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExpensePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2213,6 +2359,30 @@ export type Library$subscriptionsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.SubscriptionScalarFieldEnum | Prisma.SubscriptionScalarFieldEnum[]
+}
+
+/**
+ * Library.expenses
+ */
+export type Library$expensesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Expense
+   */
+  select?: Prisma.ExpenseSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Expense
+   */
+  omit?: Prisma.ExpenseOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ExpenseInclude<ExtArgs> | null
+  where?: Prisma.ExpenseWhereInput
+  orderBy?: Prisma.ExpenseOrderByWithRelationInput | Prisma.ExpenseOrderByWithRelationInput[]
+  cursor?: Prisma.ExpenseWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ExpenseScalarFieldEnum | Prisma.ExpenseScalarFieldEnum[]
 }
 
 /**

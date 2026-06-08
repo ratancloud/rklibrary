@@ -35,6 +35,21 @@ export const ShiftType = {
 export type ShiftType = (typeof ShiftType)[keyof typeof ShiftType]
 
 
+export const ExpenseCategory = {
+  RENT: 'RENT',
+  ELECTRICITY: 'ELECTRICITY',
+  WATER: 'WATER',
+  INTERNET: 'INTERNET',
+  MAINTENANCE: 'MAINTENANCE',
+  SALARY: 'SALARY',
+  MARKETING: 'MARKETING',
+  SUPPLIES: 'SUPPLIES',
+  OTHER: 'OTHER'
+} as const
+
+export type ExpenseCategory = (typeof ExpenseCategory)[keyof typeof ExpenseCategory]
+
+
 export const InquiryStatus = {
   PENDING: 'PENDING',
   CONTACTED: 'CONTACTED',
