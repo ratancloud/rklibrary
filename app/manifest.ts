@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
       "The best self-study centre in Sasaram providing a peaceful environment, high-speed Wi-Fi, fully AC campus, and 24-hour power backup.",
     lang: "en",
     id: "/",
-    start_url: "/",
+    start_url: "/dashboard",
     scope: "/",
     display: "standalone",
     background_color: "#F9F6F0",
