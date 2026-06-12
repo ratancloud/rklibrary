@@ -35,7 +35,7 @@ async function getLibraryId(userId: string) {
   return library?.id;
 }
 
-// GET /api/students - Fetch all students for the library with Server-Side Pagination
+// GET /api/students - Fetch all students for the library with Server-Side Pagination & Stats
 export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({
@@ -61,11 +61,31 @@ export async function GET(request: Request) {
     const skip = (page - 1) * pageSize;
     const now = new Date();
 
-    // 1. Initialize strongly-typed where clause
+    const statusConditions: Record<string, Prisma.StudentWhereInput> = {
+      active: {
+        assignments: { some: {} },
+        subscriptions: {
+          some: { status: "ACTIVE", endDate: { gte: now } },
+        },
+      },
+      expired: {
+        assignments: { some: {} },
+        subscriptions: {
+          some: {},
+          none: { status: "ACTIVE", endDate: { gte: now } },
+        },
+      },
+      none: {
+        OR: [
+          { assignments: { none: {} } },
+          { subscriptions: { none: {} } },
+        ],
+      },
+    };
+
     const where: Prisma.StudentWhereInput = { libraryId };
     const andConditions: Prisma.StudentWhereInput[] = [];
 
-    // 2. Add Search Filters
     if (search) {
       const searchLower = search.toLowerCase();
       const orConditions: Prisma.StudentWhereInput[] = [
@@ -73,48 +93,36 @@ export async function GET(request: Request) {
         { phoneNumber: { contains: search } },
         { aadhaarNumber: { contains: search } },
       ];
-      
+
       if (/^\d+$/.test(search)) {
         const numericSearch = parseInt(search, 10);
         orConditions.push({ memberId: numericSearch });
         orConditions.push({ lockerNumber: numericSearch });
       }
-      
+
       andConditions.push({ OR: orConditions });
     }
 
-    // 3. Add Status Filters
     if (status === "active") {
-      andConditions.push({
-        assignments: { some: {} },
-        subscriptions: { 
-          some: { status: "ACTIVE", endDate: { gte: now } } 
-        }
-      });
+      andConditions.push(statusConditions.active);
     } else if (status === "expired") {
-      andConditions.push({
-        assignments: { some: {} },
-        subscriptions: { 
-          some: {},
-          none: { status: "ACTIVE", endDate: { gte: now } }
-        }
-      });
+      andConditions.push(statusConditions.expired);
     } else if (status === "none") {
-      andConditions.push({
-        OR: [
-          { assignments: { none: {} } },
-          { subscriptions: { none: {} } }
-        ]
-      });
+      andConditions.push(statusConditions.none);
     }
 
-    // Attach dynamic AND conditions if any exist
     if (andConditions.length > 0) {
       where.AND = andConditions;
     }
 
-    // 4. Execute DB Queries in parallel
-    const [total, students] = await Promise.all([
+    const [
+      filteredTotal,
+      students,
+      totalCount,
+      activeCount,
+      expiredCount,
+      noneCount,
+    ] = await Promise.all([
       prisma.student.count({ where }),
       prisma.student.findMany({
         where,
@@ -126,7 +134,7 @@ export async function GET(request: Request) {
             where: {
               student: {
                 assignments: {
-                  some: {}, 
+                  some: {},
                 },
               },
             },
@@ -147,20 +155,30 @@ export async function GET(request: Request) {
           },
         },
       }),
+      prisma.student.count({ where: { libraryId } }),
+      prisma.student.count({ where: { libraryId, ...statusConditions.active } }),
+      prisma.student.count({ where: { libraryId, ...statusConditions.expired } }),
+      prisma.student.count({ where: { libraryId, ...statusConditions.none } }),
     ]);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: students,
-      total,
+      total: filteredTotal,
       page,
-      pageSize
+      pageSize,
+      stats: {
+        total: totalCount,
+        active: activeCount,
+        expired: expiredCount,
+        none: noneCount,
+      },
     });
   } catch (error) {
     console.error("Fetch Students Error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
