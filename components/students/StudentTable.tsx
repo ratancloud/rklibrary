@@ -10,6 +10,8 @@ import {
   Loader2,
   Search,
   InboxIcon,
+  TrendingUp,
+  AlertCircle,
   Phone,
   RefreshCw,
   AlertTriangle,
@@ -55,6 +57,7 @@ import { WhatsappIcon } from "../icons/SocialIcons";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DocumentPreviewDialog } from "./DocumentPreviewDialog";
+import StatCardStudent from "./StatCardStudent";
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 interface Subscription {
@@ -90,6 +93,12 @@ interface Student {
   aadhaarBackId: string | null;
   subscriptions: Subscription[];
 }
+interface StatsCount {
+  total: number;
+  active: number;
+  expired: number;
+  none: number;
+}
 
 interface PaginatedResponse {
   success: boolean;
@@ -97,6 +106,7 @@ interface PaginatedResponse {
   total: number;
   page: number;
   pageSize: number;
+  stats: StatsCount;
 }
 
 export default function StudentTable() {
@@ -147,6 +157,7 @@ export default function StudentTable() {
   });
 
   const students = data?.data || [];
+  const stats = data?.stats;
   const totalRecords = data?.total || 0;
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
 
@@ -442,7 +453,7 @@ export default function StudentTable() {
         ),
       },
     ],
-    [page, pageSize],
+    [page, pageSize, router],
   );
 
   // Create table instance configured for server-side pagination
@@ -456,6 +467,35 @@ export default function StudentTable() {
 
   return (
     <div className="flex flex-col h-full bg-card gap-2 md:gap-3">
+      {/* Stats Section */}
+      <div className="p-2 md:p-4 border-b border-border bg-linear-to-r from-primary/5 via-transparent to-secondary/5 backdrop-blur-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-3">
+          <StatCardStudent
+            icon={TrendingUp}
+            label="Total Students"
+            value={stats?.total || 0}
+            color="from-blue-500 to-blue-600"
+          />
+          <StatCardStudent
+            icon={CheckCircle2}
+            label="Active"
+            value={stats?.active || 0}
+            color="from-emerald-500 to-emerald-600"
+          />
+          <StatCardStudent
+            icon={AlertCircle}
+            label="Expired"
+            value={stats?.expired || 0}
+            color="from-red-500 to-red-600"
+          />
+          <StatCardStudent
+            icon={Clock}
+            label="No Sub"
+            value={stats?.none || 0}
+            color="from-amber-500 to-amber-600"
+          />
+        </div>
+      </div>
       {/* Search & Filters */}
       <div className="p-2 md:p-4 border-b border-border space-y-2.5 md:space-y-3 bg-linear-to-b from-muted/20 via-muted/10 to-transparent">
         <div className="flex flex-col md:flex-row gap-2 md:gap-2.5 items-stretch md:items-center">
@@ -498,8 +538,8 @@ export default function StudentTable() {
             <button
               key={tab.id}
               onClick={() => {
-                setStatusFilter(tab.id as any);
-                setPage(1); // Reset page on filter change
+                setStatusFilter(tab.id as typeof statusFilter);
+                setPage(1);
               }}
               className={cn(
                 "px-2.5 md:px-4 py-1.5 md:py-1.75 text-[11px] md:text-xs rounded-md md:rounded-lg whitespace-nowrap transition-all duration-200 border font-medium flex items-center gap-1 md:gap-1.5 group relative",
