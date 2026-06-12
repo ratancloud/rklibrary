@@ -100,18 +100,27 @@ export default function ExpenseClientView() {
     date: new Date().toISOString().split("T")[0],
   });
 
-  const expenses: Expense[] = useMemo(() => data?.expenses || [], [data?.expenses]);
+  const expenses: Expense[] = useMemo(
+    () => data?.expenses || [],
+    [data?.expenses],
+  );
   const total: number = data?.total || 0;
 
   const topCategory = useMemo(() => {
     if (!expenses.length) return ["N/A", 0] as [string, number];
-    
-    const totals = expenses.reduce((acc: Record<string, number>, curr: Expense) => {
-      acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
-      return acc;
-    }, {});
-    
-    return Object.entries(totals).reduce<[string, number]>((a, b) => (a[1] > b[1] ? a : b), ["N/A", 0]);
+
+    const totals = expenses.reduce(
+      (acc: Record<string, number>, curr: Expense) => {
+        acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+        return acc;
+      },
+      {},
+    );
+
+    return Object.entries(totals).reduce<[string, number]>(
+      (a, b) => (a[1] > b[1] ? a : b),
+      ["N/A", 0],
+    );
   }, [expenses]);
 
   const handleSubmit = async (e: React.SubmitEvent) => {
@@ -144,7 +153,9 @@ export default function ExpenseClientView() {
     if (!expenseToDelete) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/expenses/${expenseToDelete}`, { method: "DELETE" });
+      const res = await fetch(`/api/expenses/${expenseToDelete}`, {
+        method: "DELETE",
+      });
       if (res.ok) refetch();
     } catch (error) {
       console.error("Failed to delete expense:", error);
@@ -205,14 +216,16 @@ export default function ExpenseClientView() {
     return (
       <div className="p-8 text-center text-red-500 bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-900">
         <p className="font-semibold">Failed to load expense data.</p>
-        <Button variant="outline" className="mt-4" onClick={() => refetch()}>Try Again</Button>
+        <Button variant="outline" className="mt-4" onClick={() => refetch()}>
+          Try Again
+        </Button>
       </div>
     );
   }
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -229,23 +242,27 @@ export default function ExpenseClientView() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <div className="flex-1 sm:flex-none">
-            <MonthPicker value={monthValue} onChange={setMonthValue} />
-          </div>
+        <div className="flex items-center gap-2">
+          <MonthPicker value={monthValue} onChange={setMonthValue} />
           <Button variant="outline" size="icon" onClick={() => setHide(!hide)}>
-            {hide ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </Button>
-          <Button
-            onClick={() => {
-              resetForm();
-              setIsModalOpen(true);
-            }}
-            className="flex-1 sm:flex-none gap-2"
-          >
-            <Plus className="h-4 w-4" /> Add Expense
+            {hide ? (
+              <Eye className="h-4 w-4" />
+            ) : (
+              <EyeOff className="h-4 w-4" />
+            )}
           </Button>
         </div>
+      </div>
+
+      <div className="flex items-center justify-end mb-6">
+        <Button
+        onClick={() => {
+          resetForm();
+          setIsModalOpen(true);
+        }}
+      >
+        <Plus className="h-4 w-4" /> Add Expense
+      </Button>
       </div>
 
       <div className="space-y-6">
@@ -262,7 +279,9 @@ export default function ExpenseClientView() {
             title="Highest Category"
             value={topCategory[0] as string}
             subtitle={
-              hide ? "••••••" : `₹${(topCategory[1] as number).toLocaleString()} spent`
+              hide
+                ? "••••••"
+                : `₹${(topCategory[1] as number).toLocaleString()} spent`
             }
             icon={<PieChart className="text-indigo-600" />}
             bgColor="bg-indigo-50 dark:bg-indigo-500/10"
@@ -286,44 +305,46 @@ export default function ExpenseClientView() {
               {expenses.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-40 text-center">
                   <PieChart className="h-8 w-8 text-zinc-300 dark:text-zinc-700 mb-2" />
-                  <p className="text-sm text-zinc-500">No expenses recorded yet.</p>
+                  <p className="text-sm text-zinc-500">
+                    No expenses recorded yet.
+                  </p>
                 </div>
               ) : (
-                Array.from(new Set(expenses.map((e: Expense) => e.category))).map(
-                  (category) => {
-                    const catTotal = expenses
-                      .filter((e: Expense) => e.category === category)
-                      .reduce((sum: number, e: Expense) => sum + e.amount, 0);
-                    const percentage = Math.round((catTotal / total) * 100);
+                Array.from(
+                  new Set(expenses.map((e: Expense) => e.category)),
+                ).map((category) => {
+                  const catTotal = expenses
+                    .filter((e: Expense) => e.category === category)
+                    .reduce((sum: number, e: Expense) => sum + e.amount, 0);
+                  const percentage = Math.round((catTotal / total) * 100);
 
-                    return (
-                      <div
-                        key={category}
-                        className="p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/50 hover:border-indigo-200 dark:hover:border-indigo-900 transition-colors"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                            {category}
-                          </h4>
-                          <span className="text-sm font-black">
-                            {percentage}%
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-2">
-                          <div
-                            className="h-full rounded-full bg-indigo-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <div className="text-right mt-1">
-                          <span className="text-xs font-bold text-rose-600">
-                            {hide ? "••••••" : `₹${catTotal.toLocaleString()}`}
-                          </span>
-                        </div>
+                  return (
+                    <div
+                      key={category}
+                      className="p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/50 hover:border-indigo-200 dark:hover:border-indigo-900 transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                          {category}
+                        </h4>
+                        <span className="text-sm font-black">
+                          {percentage}%
+                        </span>
                       </div>
-                    );
-                  },
-                )
+                      <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-2">
+                        <div
+                          className="h-full rounded-full bg-indigo-500"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <div className="text-right mt-1">
+                        <span className="text-xs font-bold text-rose-600">
+                          {hide ? "••••••" : `₹${catTotal.toLocaleString()}`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
@@ -341,8 +362,12 @@ export default function ExpenseClientView() {
                     <th className="px-5 py-3 font-semibold">Date</th>
                     <th className="px-5 py-3 font-semibold">Title</th>
                     <th className="px-5 py-3 font-semibold">Category</th>
-                    <th className="px-5 py-3 font-semibold text-right">Amount</th>
-                    <th className="px-5 py-3 font-semibold text-right">Actions</th>
+                    <th className="px-5 py-3 font-semibold text-right">
+                      Amount
+                    </th>
+                    <th className="px-5 py-3 font-semibold text-right">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
@@ -351,8 +376,14 @@ export default function ExpenseClientView() {
                       <td colSpan={5} className="px-5 py-12 text-center">
                         <div className="flex flex-col items-center justify-center">
                           <Receipt className="h-10 w-10 text-zinc-300 dark:text-zinc-700 mb-3" />
-                          <p className="text-zinc-500 font-medium">No transactions found for this month.</p>
-                          <Button variant="link" onClick={() => setIsModalOpen(true)} className="text-indigo-600 mt-1">
+                          <p className="text-zinc-500 font-medium">
+                            No transactions found for this month.
+                          </p>
+                          <Button
+                            variant="link"
+                            onClick={() => setIsModalOpen(true)}
+                            className="text-indigo-600 mt-1"
+                          >
                             Add your first expense
                           </Button>
                         </div>
@@ -388,7 +419,9 @@ export default function ExpenseClientView() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right font-black text-rose-600">
-                          {hide ? "••••••" : `₹${expense.amount.toLocaleString()}`}
+                          {hide
+                            ? "••••••"
+                            : `₹${expense.amount.toLocaleString()}`}
                         </td>
                         <td className="px-5 py-4 text-right space-x-2">
                           <Button
@@ -418,27 +451,40 @@ export default function ExpenseClientView() {
         </div>
       </div>
 
-      <AlertDialog open={!!expenseToDelete} onOpenChange={(open) => !open && setExpenseToDelete(null)}>
+      <AlertDialog
+        open={!!expenseToDelete}
+        onOpenChange={(open) => !open && setExpenseToDelete(null)}
+      >
         <AlertDialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-zinc-900 dark:text-zinc-100">Delete Expense Record?</AlertDialogTitle>
+            <AlertDialogTitle className="text-zinc-900 dark:text-zinc-100">
+              Delete Expense Record?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-500">
-              This action cannot be undone. This will permanently delete the expense record and remove the data from our servers.
+              This action cannot be undone. This will permanently delete the
+              expense record and remove the data from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting} className="border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+            <AlertDialogCancel
+              disabled={isDeleting}
+              className="border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={(e) => {
-                e.preventDefault(); 
+                e.preventDefault();
                 handleDeleteConfirm();
-              }} 
-              disabled={isDeleting} 
+              }}
+              disabled={isDeleting}
               className="bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-600 dark:hover:bg-rose-700 border-none"
             >
-              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
               {isDeleting ? "Deleting..." : "Delete Permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -548,7 +594,11 @@ export default function ExpenseClientView() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting} className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
                   {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {editingId ? "Save Changes" : "Create Expense"}
                 </Button>

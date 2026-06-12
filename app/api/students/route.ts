@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import z from "zod";
+import { Prisma } from "@/generated/prisma/client";
 
 const studentSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -34,9 +35,8 @@ async function getLibraryId(userId: string) {
   return library?.id;
 }
 
-// GET /api/students - Fetch all students for the library
-// it is used in student table page
-export async function GET() {
+// GET /api/students - Fetch all students for the library with Server-Side Pagination
+export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -51,30 +51,111 @@ export async function GET() {
       return NextResponse.json({ error: "Library not found" }, { status: 404 });
     }
 
-    const students = await prisma.student.findMany({
-      where: { libraryId },
-      orderBy: { createdAt: "desc" },
-      include: {
-        subscriptions: {
-          orderBy: { endDate: "desc" },
-          take: 1,
-          select: {
-            id: true,
-            floorName: true,
-            seatNo: true,
-            shiftName: true,
-            totalAmount: true,
-            amountPaid: true,
-            discount: true,
-            status: true,
-            startDate: true,
-            endDate: true,
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const pageSize = parseInt(searchParams.get("pageSize") || "10");
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "all";
+
+    const skip = (page - 1) * pageSize;
+    const now = new Date();
+
+    // 1. Initialize strongly-typed where clause
+    const where: Prisma.StudentWhereInput = { libraryId };
+    const andConditions: Prisma.StudentWhereInput[] = [];
+
+    // 2. Add Search Filters
+    if (search) {
+      const searchLower = search.toLowerCase();
+      const orConditions: Prisma.StudentWhereInput[] = [
+        { name: { contains: searchLower, mode: "insensitive" } },
+        { phoneNumber: { contains: search } },
+        { aadhaarNumber: { contains: search } },
+      ];
+      
+      if (/^\d+$/.test(search)) {
+        const numericSearch = parseInt(search, 10);
+        orConditions.push({ memberId: numericSearch });
+        orConditions.push({ lockerNumber: numericSearch });
+      }
+      
+      andConditions.push({ OR: orConditions });
+    }
+
+    // 3. Add Status Filters
+    if (status === "active") {
+      andConditions.push({
+        assignments: { some: {} },
+        subscriptions: { 
+          some: { status: "ACTIVE", endDate: { gte: now } } 
+        }
+      });
+    } else if (status === "expired") {
+      andConditions.push({
+        assignments: { some: {} },
+        subscriptions: { 
+          some: {},
+          none: { status: "ACTIVE", endDate: { gte: now } }
+        }
+      });
+    } else if (status === "none") {
+      andConditions.push({
+        OR: [
+          { assignments: { none: {} } },
+          { subscriptions: { none: {} } }
+        ]
+      });
+    }
+
+    // Attach dynamic AND conditions if any exist
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
+    // 4. Execute DB Queries in parallel
+    const [total, students] = await Promise.all([
+      prisma.student.count({ where }),
+      prisma.student.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+        include: {
+          subscriptions: {
+            where: {
+              student: {
+                assignments: {
+                  some: {}, 
+                },
+              },
+            },
+            orderBy: { endDate: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              floorName: true,
+              seatNo: true,
+              shiftName: true,
+              totalAmount: true,
+              amountPaid: true,
+              discount: true,
+              status: true,
+              startDate: true,
+              endDate: true,
+            },
           },
         },
-      },
-    });
+      }),
+    ]);
 
-    return NextResponse.json({ success: true, data: students });
+    return NextResponse.json({ 
+      success: true, 
+      data: students,
+      total,
+      page,
+      pageSize
+    });
   } catch (error) {
     console.error("Fetch Students Error:", error);
     return NextResponse.json(
