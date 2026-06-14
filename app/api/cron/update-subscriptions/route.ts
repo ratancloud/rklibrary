@@ -19,14 +19,33 @@ export async function GET(request: Request) {
       },
     });
 
+    const daysLimit = 10;
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() - daysLimit);
+
+    const removedSeats = await prisma.seatAssignment.deleteMany({
+      where: {
+        student: {
+          subscriptions: {
+            none: {
+              endDate: {
+                gte: thresholdDate,
+              },
+            },
+          },
+        },
+      },
+    });
+
     return NextResponse.json({
       success: true,
-      message: 'Subscription statuses updated successfully',
-      expiredCount: expired.count,
+      message: 'Cron tasks completed successfully',
+      expiredSubscriptions: expired.count,
+      freedSeats: removedSeats.count,
     });
 
   } catch (error) {
-    console.error('Subscription cron job failed:', error);
+    console.error('Cron job failed:', error);
     return NextResponse.json(
       { error: 'Internal Server Error' }, 
       { status: 500 }
