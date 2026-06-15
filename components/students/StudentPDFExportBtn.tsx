@@ -35,7 +35,6 @@ interface Student {
 
 interface Props {
   student: Student;
-  mode: 'single' | 'multiple';
 }
 
 export default function StudentPDFExportBtn({ student }: Props) {
