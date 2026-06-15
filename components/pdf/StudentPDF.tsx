@@ -10,11 +10,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica',
     display: 'flex',
     flexDirection: 'column',
+    height: '100%',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   headerLeft: {
     flex: 1,
@@ -36,7 +37,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     borderBottom: '1pt solid #000',
     paddingBottom: 4,
-    width: '85%',
+    width: '90%',
   },
   contactText: {
     fontSize: 8,
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
   photoImage: {
     width: '100%',
     height: '100%',
-    objectFit: 'contain',
+    objectFit: 'cover',
   },
   noPhotoText: {
     fontSize: 8,
@@ -63,13 +64,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   contentWrapper: {
-    flexGrow: 1,
+    flexGrow: 1, 
   },
   table: {
     width: '100%',
     borderWidth: 1,
     borderColor: '#000000',
-    marginTop: 10,
+    marginTop: 5,
   },
   tRow: {
     flexDirection: 'row',
@@ -81,43 +82,75 @@ const styles = StyleSheet.create({
   },
   tLabel: {
     width: '25%',
-    padding: 8,
+    padding: 6,
     backgroundColor: '#f1f5f9', 
     borderRightWidth: 1,
     borderRightColor: '#000000',
-    fontSize: 9,
+    fontSize: 8,
     color: '#334155',
     textTransform: 'uppercase',
   },
   tValue: {
     width: '25%',
-    padding: 8,
+    padding: 6,
     borderRightWidth: 1,
     borderRightColor: '#000000',
-    fontSize: 10,
+    fontSize: 9,
     color: '#000000',
     fontWeight: 'bold',
   },
   tValueLast: {
     width: '25%',
-    padding: 8,
-    fontSize: 10,
+    padding: 6,
+    fontSize: 9,
     color: '#000000',
     fontWeight: 'bold',
   },
   tValueFull: {
     width: '75%',
-    padding: 8,
-    fontSize: 10,
+    padding: 6,
+    fontSize: 9,
     color: '#000000',
     fontWeight: 'bold',
+  },
+  idSectionWrapper: {
+    marginTop: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 15, 
+    height: 180,
+  },
+  idCardBox: {
+    flex: 1,
+    border: '1pt dashed #94a3b8',
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    backgroundColor: '#f8fafc',
+    overflow: 'hidden',
+  },
+  idCardLabel: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#475569',
+    textTransform: 'uppercase',
+    marginBottom: 5,
+    borderBottom: '1pt solid #cbd5e1',
+    width: '100%',
+    textAlign: 'center',
+    paddingBottom: 3,
+  },
+  idImage: {
+    width: '100%',
+    flex: 1,
+    objectFit: 'contain',
   },
   signatureBlock: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-    marginTop: 40,
-    marginBottom: 20,
+    marginTop: 25,
+    marginBottom: 10,
   },
   signatureLine: {
     width: 160,
@@ -153,7 +186,7 @@ const styles = StyleSheet.create({
     border: '1pt solid #cbd5e1',
     padding: 10,
   },
-  documentImage: {
+  documentImageLarge: {
     maxWidth: '100%',
     maxHeight: '100%',
     objectFit: 'contain',
@@ -179,9 +212,11 @@ interface Student {
 
 interface StudentPDFProps {
   student: Student;
+  mode: 'single' | 'multiple';
 }
 
-export const StudentPDF = ({ student }: StudentPDFProps) => {
+export const StudentPDF = ({ student, mode }: StudentPDFProps) => {
+
   const maskAadhar = (aadhar: string | null) => {
     if (!aadhar) return 'N/A';
     return `XXXX - XXXX - ${aadhar.slice(-4)}`;
@@ -189,7 +224,7 @@ export const StudentPDF = ({ student }: StudentPDFProps) => {
 
   return (
     <Document>
-      {/* PAGE 1: Formal Grid Record */}
+      {/* PAGE 1: Formal Record */}
       <Page size="A4" style={styles.page}>
         
         {/* Header Block */}
@@ -218,18 +253,14 @@ export const StudentPDF = ({ student }: StudentPDFProps) => {
           </View>
         </View>
 
-        {/* Content Wrapper to push signatures down */}
         <View style={styles.contentWrapper}>
           {/* Structured Table Grid */}
           <View style={styles.table}>
-            
-            {/* Row 1 */}
             <View style={styles.tRow}>
               <Text style={styles.tLabel}>Full Name</Text>
               <Text style={styles.tValueFull}>{student.name}</Text>
             </View>
             
-            {/* Row 2 */}
             <View style={styles.tRow}>
               <Text style={styles.tLabel}>Member ID</Text>
               <Text style={styles.tValue}>{student.memberId ? formatMemberId(student.memberId) : 'PENDING'}</Text>
@@ -237,7 +268,6 @@ export const StudentPDF = ({ student }: StudentPDFProps) => {
               <Text style={styles.tValueLast}>{student.gender}</Text>
             </View>
 
-            {/* Row 3 */}
             <View style={styles.tRow}>
               <Text style={styles.tLabel}>Phone Number</Text>
               <Text style={styles.tValue}>{student.phoneNumber}</Text>
@@ -245,34 +275,52 @@ export const StudentPDF = ({ student }: StudentPDFProps) => {
               <Text style={styles.tValueLast}>{maskAadhar(student.aadhaarNumber)}</Text>
             </View>
 
-            {/* Row 4 */}
             <View style={styles.tRow}>
               <Text style={styles.tLabel}>Father&apos;s Name</Text>
               <Text style={styles.tValueFull}>{student.fatherName}</Text>
             </View>
 
-            {/* Row 5 */}
             <View style={styles.tRow}>
               <Text style={styles.tLabel}>Father&apos;s Phone</Text>
               <Text style={styles.tValueFull}>{student.fatherPhone || 'N/A'}</Text>
             </View>
 
-            {/* Row 6 */}
             <View style={styles.tRow}>
               <Text style={styles.tLabel}>Local Address</Text>
               <Text style={styles.tValueFull}>{student.temporaryAddress || 'N/A'}</Text>
             </View>
 
-            {/* Row 7 (Last Row) */}
             <View style={styles.tRowLast}>
               <Text style={styles.tLabel}>Perm. Address</Text>
               <Text style={styles.tValueFull}>{student.address || 'N/A'}</Text>
             </View>
-
           </View>
+
+          {/* SINGLE PAGE MODE: Render ID Cards inside Page 1 */}
+          {mode === 'single' && (
+            <View style={styles.idSectionWrapper}>
+              <View style={styles.idCardBox}>
+                <Text style={styles.idCardLabel}>ID Document (Front)</Text>
+                {student.aadhaarFrontUrl ? (
+                  <Image src={student.aadhaarFrontUrl} style={styles.idImage} />
+                ) : (
+                  <Text style={styles.noPhotoText}>No Image Provided</Text>
+                )}
+              </View>
+
+              <View style={styles.idCardBox}>
+                <Text style={styles.idCardLabel}>ID Document (Back)</Text>
+                {student.aadhaarBackUrl ? (
+                  <Image src={student.aadhaarBackUrl} style={styles.idImage} />
+                ) : (
+                  <Text style={styles.noPhotoText}>No Image Provided</Text>
+                )}
+              </View>
+            </View>
+          )}
         </View>
 
-        {/* Footer Signatures - Pushed to bottom */}
+        {/* Footer Signatures (Locked to bottom) */}
         <View style={styles.signatureBlock}>
           <View style={styles.signatureLine}>
             <Text style={styles.signatureText}>Applicant Signature</Text>
@@ -285,22 +333,21 @@ export const StudentPDF = ({ student }: StudentPDFProps) => {
         </View>
       </Page>
 
-      {/* PAGE 2: Aadhaar Front */}
-      {student.aadhaarFrontUrl && (
+      {/* MULTI PAGE MODE: Render ID Cards on separate pages */}
+      {mode === 'multiple' && student.aadhaarFrontUrl && (
         <Page size="A4" style={styles.page}>
           <Text style={styles.annexureTitle}>Annexure: Identity Document (Front)</Text>
           <View style={styles.imagePageWrapper}>
-            <Image src={student.aadhaarFrontUrl} style={styles.documentImage} />
+            <Image src={student.aadhaarFrontUrl} style={styles.documentImageLarge} />
           </View>
         </Page>
       )}
 
-      {/* PAGE 3: Aadhaar Back */}
-      {student.aadhaarBackUrl && (
+      {mode === 'multiple' && student.aadhaarBackUrl && (
         <Page size="A4" style={styles.page}>
           <Text style={styles.annexureTitle}>Annexure: Identity Document (Back)</Text>
           <View style={styles.imagePageWrapper}>
-            <Image src={student.aadhaarBackUrl} style={styles.documentImage} />
+            <Image src={student.aadhaarBackUrl} style={styles.documentImageLarge} />
           </View>
         </Page>
       )}
