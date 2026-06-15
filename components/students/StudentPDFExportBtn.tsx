@@ -35,9 +35,12 @@ interface Student {
 
 interface Props {
   student: Student;
+  className?: string;
+  text?: boolean;
+  size?: "default" | "sm" | "lg";
 }
 
-export default function StudentPDFExportBtn({ student }: Props) {
+export default function StudentPDFExportBtn({ student, className, text, size }: Props) {
   const [mode, setMode] = useState<'single' | 'multiple'>('single');
   const pdfDocument = useMemo(() => <StudentPDF student={student} mode={mode} />, [student, mode]);
   const fileName = `${student.name.replace(/\s+/g, "_")}_Profile.pdf`;
@@ -45,17 +48,20 @@ export default function StudentPDFExportBtn({ student }: Props) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button
+        <Button
+          size={size}
+          variant="outline"
           title="Export PDF"
           className={cn(
-            "p-2 rounded-lg transition-all duration-200 bg-background border border-border shadow-sm hover:shadow-md hover:border-transparent text-xs md:text-sm",
+            "p-2 rounded-lg transition-all duration-200 bg-background border border-border shadow-sm hover:shadow-md hover:border-transparent",
             "flex items-center justify-center",
             "active:scale-95 hover:scale-105",
-            "text-indigo-500 hover:bg-indigo-500/10"
+            "text-indigo-500 hover:bg-indigo-500/10",
+            className
           )}
         >
-          <FileText className="size-4" />
-        </button>
+          <FileText className="size-4" /> {text && "Export PDF"}
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden bg-background">

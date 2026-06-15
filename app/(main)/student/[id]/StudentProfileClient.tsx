@@ -55,6 +55,7 @@ import { WhatsappIcon } from "@/components/icons/SocialIcons";
 import { generateWhatsAppReceipt, sendWhatsAppMessage } from "@/lib/sendMsg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { differenceInDays } from "date-fns";
+import StudentPDFExportBtn from "@/components/students/StudentPDFExportBtn";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -65,6 +66,7 @@ interface StudentData {
   phoneNumber: string;
   fatherName: string;
   fatherPhone: string;
+  aadhaarNumber: string;
   address: string | null;
   temporaryAddress: string | null;
   lockerNumber: number | null;
@@ -320,6 +322,7 @@ export default function StudentProfileClient() {
             phoneNumber: s.phoneNumber,
             fatherName: s.fatherName,
             fatherPhone: s.fatherPhone,
+            aadhaarNumber: s.aadhaarNumber,
             address: s.address,
             temporaryAddress: s.temporaryAddress || null,
             lockerNumber: s.lockerNumber,
@@ -475,7 +478,7 @@ export default function StudentProfileClient() {
           <div className="relative p-5 md:p-6">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               {/* Left: Identity */}
-              <div className="flex items-start gap-4">
+              <div className="flex items-center gap-4">
                 {/* Avatar */}
                 <Avatar
                   size="lg"
@@ -531,8 +534,8 @@ export default function StudentProfileClient() {
               </div>
 
               {/* Right: Actions */}
-              {/* FIXED: Changed from grid to flex so remaining buttons align naturally to the left */}
               <div className="flex flex-wrap items-center sm:justify-end gap-2 shrink-0">
+                
                 {student.aadhaarFrontUrl && (
                   <Button
                     size="sm"
@@ -563,6 +566,12 @@ export default function StudentProfileClient() {
                     Adhar Back
                   </Button>
                 )}
+                <StudentPDFExportBtn
+                  size="sm"
+                  student={student}
+                  text={true}
+                  className="gap-1.5 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm active:scale-none hover:scale-none"
+                />
                 <Button
                   size="sm"
                   variant="outline"
