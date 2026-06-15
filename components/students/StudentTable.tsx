@@ -58,6 +58,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DocumentPreviewDialog } from "./DocumentPreviewDialog";
 import StatCardStudent from "./StatCardStudent";
+import dynamic from "next/dynamic";
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 interface Subscription {
@@ -91,6 +92,7 @@ interface Student {
   aadhaarFrontId: string | null;
   aadhaarBackUrl: string | null;
   aadhaarBackId: string | null;
+  createdAt: string;
   subscriptions: Subscription[];
 }
 interface StatsCount {
@@ -108,6 +110,11 @@ interface PaginatedResponse {
   pageSize: number;
   stats: StatsCount;
 }
+
+const StudentPDFExportBtn = dynamic(
+  () => import("../students/StudentPDFExportBtn"), 
+  { ssr: false, loading: () => <Button disabled size="sm" variant="outline"><Loader2 className="size-4 animate-spin"/></Button> }
+);
 
 export default function StudentTable() {
   const router = useRouter();
@@ -440,6 +447,7 @@ export default function StudentTable() {
               onClick={() => router.push(`/student/edit/${row.original.id}`)}
               title="Edit"
             />
+            <StudentPDFExportBtn student={row.original} />
             <ActionBtn
               icon={Trash2}
               color="text-destructive hover:bg-destructive/10"
