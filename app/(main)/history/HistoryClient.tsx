@@ -76,6 +76,7 @@ interface HistoryRecord {
   totalAmount: number;
   discount: number;
   amountPaid: number;
+  lockerAmount: number;
   status: string;
   createdAt: string;
   memberIdFormatted: string;
@@ -355,6 +356,12 @@ export default function HistoryClient() {
                   ₹{total.toLocaleString()}
                 </span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Locker:</span>
+                <span className="text-sm font-semibold">
+                  ₹{info.row.original.lockerAmount.toLocaleString()}
+                </span>
+              </div>
               {discount > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-destructive">Discount:</span>
@@ -578,10 +585,7 @@ export default function HistoryClient() {
             {/* Status Filter */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="justify-between sm:w-32"
-                >
+                <Button variant="outline" className="justify-between sm:w-32">
                   <span className="truncate">
                     {getStatusLabel(statusFilter)}
                   </span>
@@ -612,10 +616,7 @@ export default function HistoryClient() {
             {/* Shift Filter - Dropdown Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="justify-between sm:w-40"
-                >
+                <Button variant="outline" className="justify-between sm:w-40">
                   <span className="truncate">
                     {selectedShifts.length === 0
                       ? "All Shifts"

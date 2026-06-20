@@ -254,6 +254,7 @@ model Subscription {
   totalAmount Int
   discount    Int      @default(0)
   amountPaid  Int      @default(0)
+  lockerAmount  Int    @default(0)
   status      Status   @default(ACTIVE)
 
   createdAt DateTime @default(now())

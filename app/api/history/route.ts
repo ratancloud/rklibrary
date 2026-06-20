@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
         totalAmount: true,
         discount: true,
         amountPaid: true,
+        lockerAmount: true,
         status: true,
         createdAt: true,
         student: {
@@ -111,6 +112,7 @@ export async function GET(request: NextRequest) {
       totalAmount: sub.totalAmount,
       discount: sub.discount,
       amountPaid: sub.amountPaid,
+      lockerAmount: sub.lockerAmount,
       status: sub.status,
       createdAt: sub.createdAt.toISOString(),
       profileImageUrl: sub.student?.profileImageUrl || null,
@@ -149,7 +151,7 @@ export async function GET(request: NextRequest) {
 function convertToCSV(records: any[]): string {
   const headers = [
     'Member ID', 'Student Name', 'Gender', 'Phone', 'Floor', 'Seat', 
-    'Shifts', 'Total Amount', 'Discount', 'Final Amount', 'Amount Paid', 'Due', 'Status', 'Start Date', 'End Date', 'Created At'
+    'Shifts', 'Total Amount', 'Discount', 'Final Amount', 'Amount Paid', 'LockerAmount', 'Due', 'Status', 'Start Date', 'End Date', 'Created At'
   ];
 
   const rows = records.map((record) => {
@@ -165,6 +167,7 @@ function convertToCSV(records: any[]): string {
       record.shiftName.join(' | '),
       record.totalAmount,
       record.discount || 0,
+      record.lockerAmount || 0,
       finalAmount,
       record.amountPaid,
       due,

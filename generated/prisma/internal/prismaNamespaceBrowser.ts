@@ -244,6 +244,7 @@ export const SubscriptionScalarFieldEnum = {
   totalAmount: 'totalAmount',
   discount: 'discount',
   amountPaid: 'amountPaid',
+  lockerAmount: 'lockerAmount',
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
