@@ -346,8 +346,9 @@ export default function HistoryClient() {
         header: "Price",
         cell: (info) => {
           const total = info.getValue();
+          const lockerAmount = info.row.original.lockerAmount || 0; 
           const discount = info.row.original.discount || 0;
-          const finalAmount = total - discount;
+          const finalAmount = total + lockerAmount - discount;
           return (
             <div className="flex flex-col gap-1.5 min-w-32">
               <div className="flex items-center justify-between">
