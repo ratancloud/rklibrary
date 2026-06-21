@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  LockKeyholeOpen,
 } from "lucide-react";
 import {
   useReactTable,
@@ -95,6 +96,7 @@ interface Student {
   createdAt: string;
   subscriptions: Subscription[];
 }
+
 interface StatsCount {
   total: number;
   active: number;
@@ -134,6 +136,11 @@ export default function StudentTable() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>("");
+
+  const [lockerDialogOpen, setLockerDialogOpen] = useState(false);
+  const [selectedStudentForLocker, setSelectedStudentForLocker] = useState<string | null>(null);
+  const [lockerNumberInput, setLockerNumberInput] = useState("");
+  const [lockerAmountInput, setLockerAmountInput] = useState("");
 
   // Debounce logic
   useEffect(() => {
@@ -202,6 +209,55 @@ export default function StudentTable() {
     },
     onError: () => toast.error("Failed to delete student"),
   });
+
+  const { mutate: assignLocker, isPending: assigningLocker } = useMutation({
+    mutationFn: async (payload: { lockerNumber: number; studentId: string; lockerAmount: number }) => {
+      const res = await fetch("/api/add-locker", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to assign locker");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Locker assigned successfully!");
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      setLockerDialogOpen(false);
+      setSelectedStudentForLocker(null);
+      setLockerNumberInput("");
+      setLockerAmountInput("");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleAssignLockerSubmit = () => {
+    if (!selectedStudentForLocker) return;
+
+    const lockerNumber = parseInt(lockerNumberInput, 10);
+    const lockerAmount = parseFloat(lockerAmountInput);
+
+    if (isNaN(lockerNumber) || lockerNumber <= 0) {
+      toast.error("Please enter a valid locker number.");
+      return;
+    }
+    if (isNaN(lockerAmount) || lockerAmount < 0) {
+      toast.error("Please enter a valid locker amount.");
+      return;
+    }
+
+    assignLocker({
+      studentId: selectedStudentForLocker,
+      lockerNumber,
+      lockerAmount,
+    });
+  };
 
   const getSubStatus = (subs: Subscription[]) => {
     if (!subs || subs.length === 0)
@@ -446,6 +502,17 @@ export default function StudentTable() {
               color="text-blue-500 hover:bg-blue-500/10"
               onClick={() => router.push(`/student/edit/${row.original.id}`)}
               title="Edit"
+            /> 
+            <ActionBtn
+              icon={LockKeyholeOpen}
+              color="text-amber-500 hover:bg-amber-500/10"
+              onClick={() => {
+                setSelectedStudentForLocker(row.original.id);
+                setLockerNumberInput(row.original.lockerNumber?.toString() || "");
+                setLockerAmountInput("");
+                setLockerDialogOpen(true);
+              }}
+              title="Assign Locker"
             />
             <StudentPDFExportBtn student={row.original} />
             <ActionBtn
@@ -689,6 +756,71 @@ export default function StudentTable() {
           </div>
         </div>
       )}
+
+      {/* Assign Locker Dialog */}
+      <Dialog open={lockerDialogOpen} onOpenChange={setLockerDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-background border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LockKeyholeOpen className="size-5 text-amber-500" /> Assign Locker
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground mt-2">
+              Enter the locker number and the amount paid to assign a locker to this student.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="lockerNumber" className="text-sm font-medium">
+                Locker Number
+              </label>
+              <Input
+                id="lockerNumber"
+                type="number"
+                min={1}
+                placeholder="e.g. 15"
+                value={lockerNumberInput}
+                onChange={(e) => setLockerNumberInput(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="lockerAmount" className="text-sm font-medium">
+                Amount Paid (₹)
+              </label>
+              <Input
+                id="lockerAmount"
+                type="number"
+                min={0}
+                placeholder="e.g. 500"
+                value={lockerAmountInput}
+                onChange={(e) => setLockerAmountInput(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setLockerDialogOpen(false)}
+              disabled={assigningLocker}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+              onClick={handleAssignLockerSubmit}
+              disabled={assigningLocker || !lockerNumberInput || !lockerAmountInput}
+            >
+              {assigningLocker ? (
+                <Loader2 className="size-4 animate-spin mr-2" />
+              ) : (
+                <LockKeyholeOpen className="size-4 mr-2" />
+              )}
+              {assigningLocker ? "Assigning..." : "Assign Locker"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
