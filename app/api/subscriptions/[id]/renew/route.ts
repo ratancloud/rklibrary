@@ -32,12 +32,18 @@ export async function GET(
         startDate: true,
         endDate: true,
         totalAmount: true,
+        lockerAmount: true,
         discount: true,
         amountPaid: true,
         status: true,
         library: {
           select: { userId: true },
         },
+        student: {
+          select: {
+            lockerNumber: true,
+          }
+        }
       },
     });
 
@@ -82,6 +88,8 @@ export async function GET(
         previousStatus: subscription.status,
         newStartDate: oldEnd,
         pricePerMonth,
+        lockerAmount: subscription.lockerAmount,
+        lockerNumber: subscription.student?.lockerNumber,
       },
     });
   } catch (error) {
@@ -94,7 +102,7 @@ export async function GET(
 }
 
 // POST /api/subscriptions/[id]/renew
-// Body: { months: number, amountPaid: number }
+// Body: { months: number, amountPaid: number,discount: number lockerAmount: number }
 // Creates a new Subscription row. Old one stays as historical record.
 // Re-creates SeatAssignment if missing (in case seat was dissociated).
 export async function POST(
@@ -112,6 +120,7 @@ export async function POST(
     const months = parseInt(body?.months);
     const discount = parseInt(body?.discount ?? "0");
     const amountPaid = parseInt(body?.amountPaid ?? "0");
+    const lockerAmount = parseInt(body?.lockerAmount ?? "0");
 
     if (!months || months < 1 || months > 12)
       return NextResponse.json(
@@ -130,6 +139,13 @@ export async function POST(
         { error: "Invalid amountPaid" },
         { status: 400 },
       );
+    
+    if (isNaN(lockerAmount) || lockerAmount < 0) {
+      return NextResponse.json(
+        { error: "Invalid lockerAmount" },
+        { status: 400 },
+      );
+    }
 
     // 1. Fetch old subscription
     const old = await prisma.subscription.findUnique({
@@ -146,6 +162,7 @@ export async function POST(
         studentPhone: true,
         studentAddress: true,
         endDate: true,
+        lockerAmount: true,        
         status: true,
         library: {
           select: { userId: true },
@@ -230,6 +247,7 @@ export async function POST(
           studentAddress: old.studentAddress,
           startDate: newStartDate,
           endDate: newEndDate,
+          lockerAmount: lockerAmount,
           totalAmount,
           discount,
           amountPaid,
@@ -269,6 +287,7 @@ export async function POST(
       endDate: newEndDate,
       totalAmount,
       discount,
+      lockerAmount,
       finalAmount,
       amountPaid,
     });
