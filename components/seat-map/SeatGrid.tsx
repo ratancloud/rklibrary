@@ -145,7 +145,8 @@ function ChairSVG({
   isBooked,
   allShifts = [],
 }: ChairProps) {
-  const shiftsToUse = allShifts.length > 0 ? allShifts.map(s => s.name) : activeShifts;
+  const shiftsToUse =
+    allShifts.length > 0 ? allShifts.map((s) => s.name) : activeShifts;
   const n = Math.min(shiftsToUse.length, 4);
   const quads = getQuads(n);
 
@@ -176,7 +177,7 @@ function ChairSVG({
           );
           const sc = STATUS_STYLES[status];
           const identity = resolveShiftIdentity(shiftName, idx);
-          const shiftInfo = allShifts.find(s => s.name === shiftName);
+          const shiftInfo = allShifts.find((s) => s.name === shiftName);
           const isShiftInactive = shiftInfo && !shiftInfo.isActive;
 
           return (
@@ -401,18 +402,32 @@ function ChairSVG({
 }
 
 // ─── Legend strip ─────────────────────────────────────────────────────────────
-function ShiftLegend({ shiftsToDisplay, allShifts = [] }: { shiftsToDisplay: string[]; allShifts?: { name: string; isActive: boolean }[] }) {
+function ShiftLegend({
+  shiftsToDisplay,
+  allShifts = [],
+}: {
+  shiftsToDisplay: string[];
+  allShifts?: { name: string; isActive: boolean }[];
+}) {
   const positionLabels = ["Morning", "Afternoon", "Evening", "Night"];
   return (
     <div className="flex flex-wrap gap-3 mb-4 text-[11px] font-medium text-muted-foreground">
       {shiftsToDisplay.slice(0, 4).map((shift, idx) => {
         const identity = resolveShiftIdentity(shift, idx);
-        const shiftInfo = allShifts.find(s => s.name === shift);
+        const shiftInfo = allShifts.find((s) => s.name === shift);
         const isInactive = shiftInfo && !shiftInfo.isActive;
         return (
-          <div key={shift} className={cn("flex items-center gap-1.5", isInactive && "opacity-50")}>
+          <div
+            key={shift}
+            className={cn(
+              "flex items-center gap-1.5",
+              isInactive && "opacity-50",
+            )}
+          >
             <span style={{ color: identity.stroke }}>{identity.short}</span>
-            <span>{positionLabels[idx]} {isInactive && "(Inactive)"}</span>
+            <span>
+              {positionLabels[idx]} {isInactive && "(Inactive)"}
+            </span>
           </div>
         );
       })}
@@ -443,27 +458,36 @@ export function SeatGrid({
   allShifts = [],
 }: Props) {
   const isAllMode = selectedShift === "ALL";
-  const shiftsToDisplay = allShifts.length > 0 ? allShifts.map(s => s.name) : activeShifts;
+  const shiftsToDisplay =
+    allShifts.length > 0 ? allShifts.map((s) => s.name) : activeShifts;
 
   const stats = useMemo(() => {
-    let totalSlots = 0,
-      occupiedSlots = 0,
-      activeSeats = 0;
+    let physicalActiveSeats = 0;
+    let occupied = 0;
+
     currentFloorSeats.forEach(([, seatInfo]) => {
       if (!seatInfo.active) return;
-      activeSeats++;
+      physicalActiveSeats++;
+      console.log(physicalActiveSeats);
+      
+
       if (isAllMode) {
-        totalSlots += shiftsToDisplay.length;
-        shiftsToDisplay.forEach((k) => {
-          if (seatInfo.shifts[k]) occupiedSlots++;
+        activeShifts.forEach((k) => {
+          if (seatInfo.shifts[k]) occupied++;
         });
       } else {
-        totalSlots++;
-        if (seatInfo.shifts[selectedShift]) occupiedSlots++;
+        if (seatInfo.shifts[selectedShift]) occupied++;
       }
     });
-    return { totalSlots, occupiedSlots, activeSeats };
-  }, [currentFloorSeats, isAllMode, selectedShift, shiftsToDisplay]);
+    
+    const total = isAllMode
+      ? physicalActiveSeats * activeShifts.length
+      : physicalActiveSeats;
+
+    const avail = total - occupied;
+
+    return { total, occupied, avail };
+  }, [currentFloorSeats, isAllMode, selectedShift, activeShifts]);
 
   return (
     <div className="flex-1 w-full bg-background rounded-2xl p-6 md:p-8 border border-border shadow-sm">
@@ -491,17 +515,17 @@ export function SeatGrid({
       <div className="mb-6 p-3 bg-muted/30 rounded-xl flex gap-6 text-xs font-medium text-muted-foreground border border-border/40">
         <div>
           Total seats:{" "}
-          <span className="text-foreground font-bold">{stats.activeSeats}</span>
+          <span className="text-foreground font-bold">{stats.total}</span>
         </div>
         <div>
           Available:{" "}
           <span className="text-emerald-600 font-bold">
-            {stats.totalSlots - stats.occupiedSlots}
+            {stats.avail}
           </span>
         </div>
         <div>
           Booked:{" "}
-          <span className="text-blue-600 font-bold">{stats.occupiedSlots}</span>
+          <span className="text-blue-600 font-bold">{stats.occupied}</span>
         </div>
       </div>
 
