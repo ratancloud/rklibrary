@@ -60,6 +60,34 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DocumentPreviewDialog } from "./DocumentPreviewDialog";
 import StatCardStudent from "./StatCardStudent";
 import dynamic from "next/dynamic";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const SHIFT_VALUES = ["MORNING", "AFTERNOON", "EVENING"] as const;
+
+type ShiftValue = (typeof SHIFT_VALUES)[number];
+
+type ShiftFilterOption = {
+  value: string;
+  label: string;
+};
+
+function formatShiftLabel(value: ShiftValue) {
+  return value.charAt(0) + value.slice(1).toLowerCase();
+}
+
+function formatShiftDisplay(value: string) {
+  return value.charAt(0) + value.slice(1).toLowerCase();
+}
+
+const SHIFT_FILTERS: ShiftFilterOption[] = SHIFT_VALUES.map((shift) => ({
+  value: shift,
+  label: formatShiftLabel(shift),
+}));
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 interface Subscription {
@@ -128,6 +156,7 @@ export default function StudentTable() {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "expired" | "none"
   >("all");
+  const [shiftFilter, setShiftFilter] = useState<ShiftValue[]>([]);
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
@@ -157,6 +186,7 @@ export default function StudentTable() {
       page: String(page),
       pageSize: String(pageSize),
       status: statusFilter,
+      shiftFilter: shiftFilter.length > 0 ? shiftFilter.join(",") : "all",
       ...(debouncedSearch && { search: debouncedSearch }),
     });
     const response = await fetch(`/api/students?${params}`);
@@ -165,7 +195,7 @@ export default function StudentTable() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ["students", { page, pageSize, debouncedSearch, statusFilter }],
+    queryKey: ["students", { page, pageSize, debouncedSearch, statusFilter, shiftFilter }],
     queryFn: fetchStudents,
     placeholderData: (prev) => prev,
   });
@@ -402,6 +432,31 @@ export default function StudentTable() {
           ),
       },
       {
+        id: "shifts",
+        header: "Shifts",
+        cell: ({ row }) => {
+          const latestSub = row.original.subscriptions[0];
+
+          if (!latestSub || latestSub.shiftName.length === 0) {
+            return <span className="text-muted-foreground text-xs">-</span>;
+          }
+
+          return (
+            <div className="flex flex-wrap gap-1 max-w-40">
+              {latestSub.shiftName.map((shift) => (
+                <Badge
+                  key={shift}
+                  variant="secondary"
+                  className="text-[10px] px-2 py-0.5"
+                >
+                  {formatShiftDisplay(shift)}
+                </Badge>
+              ))}
+            </div>
+          );
+        },
+      },
+      {
         id: "expiry",
         header: "Expiry",
         cell: ({ row }) => {
@@ -632,6 +687,56 @@ export default function StudentTable() {
               )}
             </button>
           ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex-1 md:max-w-sm">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full h-10 justify-between rounded-lg border-2 border-border bg-background px-3 text-xs md:text-sm shadow-sm hover:bg-background focus-visible:ring-0 focus:border-primary"
+                >
+                  <span className="truncate">
+                    {shiftFilter.length === 0
+                      ? "All Shifts"
+                      : `${shiftFilter.map(formatShiftLabel).join(", ")}`}
+                  </span>
+                  <span className="ml-2 text-[10px] md:text-xs text-muted-foreground">
+                    {shiftFilter.length > 0 ? shiftFilter.length : SHIFT_FILTERS.length}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuCheckboxItem
+                  checked={shiftFilter.length === 0}
+                  onCheckedChange={() => {
+                    setShiftFilter([]);
+                    setPage(1);
+                  }}
+                >
+                  All Shifts
+                </DropdownMenuCheckboxItem>
+                {SHIFT_FILTERS.map((filter) => (
+                  <DropdownMenuCheckboxItem
+                    key={filter.value}
+                    checked={shiftFilter.includes(filter.value as ShiftValue)}
+                    onCheckedChange={(checked) => {
+                      setShiftFilter((current) => {
+                        const next = checked
+                          ? Array.from(new Set([...current, filter.value as ShiftValue]))
+                          : current.filter((item) => item !== filter.value);
+                        return next;
+                      });
+                      setPage(1);
+                    }}
+                  >
+                    {filter.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 

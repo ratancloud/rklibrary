@@ -5,6 +5,19 @@ import { headers } from "next/headers";
 import z from "zod";
 import { Prisma } from "@/generated/prisma/client";
 
+const SHIFT_ORDER = ["MORNING", "AFTERNOON", "EVENING", "NIGHT"] as const;
+
+function parseShiftFilter(rawValue: string | null) {
+  if (!rawValue || rawValue === "all") return [];
+
+  const selected = rawValue
+    .split(",")
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => SHIFT_ORDER.includes(value as (typeof SHIFT_ORDER)[number]));
+
+  return Array.from(new Set(selected)) as (typeof SHIFT_ORDER)[number][];
+}
+
 const studentSchema = z.object({
   name: z.string().min(1, "Name is required"),
   gender: z.string().min(1, "Gender is required"),
@@ -57,6 +70,7 @@ export async function GET(request: Request) {
     const pageSize = parseInt(searchParams.get("pageSize") || "10");
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "all";
+    const shiftFilter = parseShiftFilter(searchParams.get("shiftFilter"));
 
     const skip = (page - 1) * pageSize;
     const now = new Date();
@@ -109,6 +123,18 @@ export async function GET(request: Request) {
       andConditions.push(statusConditions.expired);
     } else if (status === "none") {
       andConditions.push(statusConditions.none);
+    }
+
+    if (shiftFilter.length > 0) {
+      andConditions.push({
+        subscriptions: {
+          some: {
+            status: "ACTIVE",
+            endDate: { gte: now },
+            shiftName: { hasEvery: shiftFilter },
+          },
+        },
+      });
     }
 
     if (andConditions.length > 0) {
