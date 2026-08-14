@@ -95,6 +95,7 @@ interface SubscriptionData {
   totalAmount: number;
   discount: number;
   amountPaid: number;
+  lockerAmount?: number | null;
   status: "ACTIVE" | "EXPIRED" | "UPCOMING";
   floorName: string;
   seatNo: number;
@@ -1010,7 +1011,8 @@ function ActiveSubscriptionCard({
   onUpdateDues: () => void;
 }) {
   const router = useRouter();
-  const finalAmount = sub.totalAmount - (sub.discount || 0);
+  const finalAmount =
+    sub.totalAmount + (sub.lockerAmount || 0) - (sub.discount || 0);
   const dues = finalAmount - sub.amountPaid;
   const daysLeft = differenceInDays(new Date(sub.endDate), new Date());
   const progress = Math.round((sub.amountPaid / finalAmount) * 100);
@@ -1134,6 +1136,12 @@ function ActiveSubscriptionCard({
               <span className="text-muted-foreground">Original Total</span>
               <span className="font-semibold">₹{sub.totalAmount}</span>
             </div>
+            {sub.lockerAmount && sub.lockerAmount > 0 ? (
+              <div className="flex justify-between border-t border-border pt-1.5">
+                <span className="text-muted-foreground">Locker Fee</span>
+                <span className="font-semibold">₹{sub.lockerAmount}</span>
+              </div>
+            ) : null}
             {sub.discount > 0 && (
               <div className="flex justify-between border-t border-border pt-1.5">
                 <span className="text-destructive font-medium">Discount</span>
@@ -1145,7 +1153,7 @@ function ActiveSubscriptionCard({
             <div
               className={cn(
                 "flex justify-between border-t pt-1.5 font-bold",
-                sub.discount > 0 && "border-border",
+                (sub.discount > 0 || (sub.lockerAmount && sub.lockerAmount > 0)) && "border-border",
               )}
             >
               <span className="text-primary">Final Amount</span>

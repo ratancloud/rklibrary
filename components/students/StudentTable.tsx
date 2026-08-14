@@ -98,6 +98,7 @@ interface Subscription {
   totalAmount: number;
   discount: number;
   amountPaid: number;
+  lockerAmount?: number;
   startDate: string;
   endDate: string;
   status: string;
@@ -142,8 +143,8 @@ interface PaginatedResponse {
 }
 
 const StudentPDFExportBtn = dynamic(
-  () => import("../students/StudentPDFExportBtn"), 
-  { ssr: false, loading: () => <Button disabled size="sm" variant="outline"><Loader2 className="size-4 animate-spin"/></Button> }
+  () => import("../students/StudentPDFExportBtn"),
+  { ssr: false, loading: () => <Button disabled size="sm" variant="outline"><Loader2 className="size-4 animate-spin" /></Button> }
 );
 
 export default function StudentTable() {
@@ -520,8 +521,9 @@ export default function StudentTable() {
                     new Date(latestSub.endDate),
                     new Date(),
                   );
+                  const lockerAmount = latestSub.lockerAmount || 0;
                   const finalAmount =
-                    latestSub.totalAmount - (latestSub.discount || 0);
+                    latestSub.totalAmount + lockerAmount - (latestSub.discount || 0);
                   const dues = finalAmount - latestSub.amountPaid;
                   const message = generateWhatsAppReceipt({
                     studentName: row.original.name,
@@ -536,6 +538,8 @@ export default function StudentTable() {
                     floorName: latestSub.floorName,
                     seatNo: latestSub.seatNo,
                     shiftName: latestSub.shiftName,
+                    lockerNumber: row.original.lockerNumber,
+                    lockerAmount: latestSub.lockerAmount,
                   });
                   sendWhatsAppMessage(row.original.phoneNumber, message);
                 } else {
@@ -557,7 +561,7 @@ export default function StudentTable() {
               color="text-blue-500 hover:bg-blue-500/10"
               onClick={() => router.push(`/student/edit/${row.original.id}`)}
               title="Edit"
-            /> 
+            />
             <ActionBtn
               icon={LockKeyholeOpen}
               color="text-amber-500 hover:bg-amber-500/10"
@@ -787,9 +791,9 @@ export default function StudentTable() {
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                       </TableHead>
                     ))}
                   </TableRow>

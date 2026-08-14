@@ -13,6 +13,8 @@ interface ReceiptData {
   amountPaid: number;
   startDateStr: string;
   endDateStr: string;
+  lockerNumber?: number | null;
+  lockerAmount?: number | null;
 }
 
 const formatIndianDate = (dateString: string): string =>
@@ -47,13 +49,18 @@ export const generateWhatsAppReceipt = ({
   startDateStr,
   endDateStr,
   shiftName,
+  lockerNumber,
+  lockerAmount,
 }: ReceiptData): string => {
   const startDate = formatIndianDate(startDateStr);
   const endDate = formatIndianDate(endDateStr);
   const memberIdText = formatMemberId(Number(memberId)) ?? "Pending";
   const daysDisplay = Math.max(0, daysLeft);
-  const finalAmount = totalAmount - discount;
+  const lAmount = lockerAmount || 0;
+  const finalAmount = totalAmount + lAmount - discount;
   const alert = buildAlert(dues, daysLeft);
+
+  const lockerText = lockerNumber ? `#${lockerNumber}` : "N/A";
 
   const lines: string[] = [
     `RK LIBRARY`,
@@ -63,6 +70,7 @@ export const generateWhatsAppReceipt = ({
     `Member ID      : ${memberIdText}`,
     `Floor          : ${floorName}`,
     `Seat Number    : #${seatNo}`,
+    `Locker Number  : ${lockerText}`,
     `Shift          : ${shiftName.join(", ")}`,
     `Start Date     : ${startDate}`,
     `End Date       : ${endDate}`,
@@ -70,6 +78,7 @@ export const generateWhatsAppReceipt = ({
     DIVIDER,
     `PAYMENT SUMMARY`,
     `Total Fee      : Rs. ${totalAmount}`,
+    `Locker Fee     : Rs. ${lAmount}`,
     ...(discount > 0 ? [`Discount       : Rs. -${discount}`] : []),
     `Final Amount   : Rs. ${finalAmount}`,
     `Amount Paid    : Rs. ${amountPaid}`,

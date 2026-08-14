@@ -174,6 +174,7 @@ export async function GET(request: Request) {
               totalAmount: true,
               amountPaid: true,
               discount: true,
+              lockerAmount: true,
               status: true,
               startDate: true,
               endDate: true,
