@@ -27,35 +27,35 @@ const SHIFT_IDENTITIES: {
   stroke: string;
   textColor: string;
 }[] = [
-  {
-    keywords: ["morning", "morn", "day1", "shift1", "first"],
-    short: "M",
-    fill: "#FFFBEB",
-    stroke: "#D97706",
-    textColor: "#78350F",
-  },
-  {
-    keywords: ["afternoon", "noon", "day2", "shift2", "second"],
-    short: "A",
-    fill: "#EFF6FF",
-    stroke: "#2563EB",
-    textColor: "#1E3A5F",
-  },
-  {
-    keywords: ["evening", "eve", "day3", "shift3", "third"],
-    short: "E",
-    fill: "#FFF5EC",
-    stroke: "#EA580C",
-    textColor: "#6B2000",
-  },
-  {
-    keywords: ["night", "late", "shift4", "fourth"],
-    short: "N",
-    fill: "#F0EEFF",
-    stroke: "#6366F1",
-    textColor: "#2E1065",
-  },
-];
+    {
+      keywords: ["morning", "morn", "day1", "shift1", "first"],
+      short: "M",
+      fill: "#FFFBEB",
+      stroke: "#D97706",
+      textColor: "#78350F",
+    },
+    {
+      keywords: ["afternoon", "noon", "day2", "shift2", "second"],
+      short: "A",
+      fill: "#EFF6FF",
+      stroke: "#2563EB",
+      textColor: "#1E3A5F",
+    },
+    {
+      keywords: ["evening", "eve", "day3", "shift3", "third"],
+      short: "E",
+      fill: "#FFF5EC",
+      stroke: "#EA580C",
+      textColor: "#6B2000",
+    },
+    {
+      keywords: ["night", "late", "shift4", "fourth"],
+      short: "N",
+      fill: "#F0EEFF",
+      stroke: "#6366F1",
+      textColor: "#2E1065",
+    },
+  ];
 
 function resolveShiftIdentity(shiftName: string, index: number) {
   const lower = shiftName.toLowerCase();
@@ -166,55 +166,55 @@ function ChairSVG({
   const quadMarkup =
     isAllMode && !isDisabled
       ? shiftsToUse.slice(0, 4).map((shiftName, idx) => {
-          const q = quads[idx];
-          if (!q) return null;
+        const q = quads[idx];
+        if (!q) return null;
 
-          const expiry = shiftExpiries[idx];
-          const hasShift = !!shifts[shiftName];
-          const status = resolveStatus(
-            hasShift ? (expiry?.days ?? 999) : null,
-            hasShift,
-          );
-          const sc = STATUS_STYLES[status];
-          const identity = resolveShiftIdentity(shiftName, idx);
-          const shiftInfo = allShifts.find((s) => s.name === shiftName);
-          const isShiftInactive = shiftInfo && !shiftInfo.isActive;
+        const expiry = shiftExpiries[idx];
+        const hasShift = !!shifts[shiftName];
+        const status = resolveStatus(
+          hasShift ? (expiry?.days ?? 999) : null,
+          hasShift,
+        );
+        const sc = STATUS_STYLES[status];
+        const identity = resolveShiftIdentity(shiftName, idx);
+        const shiftInfo = allShifts.find((s) => s.name === shiftName);
+        const isShiftInactive = shiftInfo && !shiftInfo.isActive;
 
-          return (
-            <g key={shiftName} opacity={isShiftInactive ? 0.4 : 1}>
-              <rect
-                x={q.qx}
-                y={q.qy}
-                width={q.qw}
-                height={q.qh}
-                rx={3}
-                fill={isShiftInactive ? "#E2E8F0" : sc.fill}
-                stroke={isShiftInactive ? "#94A3B8" : sc.stroke}
-                strokeWidth={0.7}
-              />
-              {/* Large centered short label — easy to read at small sizes */}
-              <text
-                x={q.qx + q.qw / 2}
-                y={q.qy + q.qh / 2}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={9}
-                fontWeight={800}
-                fill={
-                  isShiftInactive
-                    ? "#64748B"
-                    : status === "vacant"
-                      ? "#94A3B8"
-                      : status === "expired"
-                        ? "#DC2626"
-                        : identity.stroke
-                }
-              >
-                {identity.short}
-              </text>
-            </g>
-          );
-        })
+        return (
+          <g key={shiftName} opacity={isShiftInactive ? 0.4 : 1}>
+            <rect
+              x={q.qx}
+              y={q.qy}
+              width={q.qw}
+              height={q.qh}
+              rx={3}
+              fill={isShiftInactive ? "#E2E8F0" : sc.fill}
+              stroke={isShiftInactive ? "#94A3B8" : sc.stroke}
+              strokeWidth={0.7}
+            />
+            {/* Large centered short label — easy to read at small sizes */}
+            <text
+              x={q.qx + q.qw / 2}
+              y={q.qy + q.qh / 2}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={9}
+              fontWeight={800}
+              fill={
+                isShiftInactive
+                  ? "#64748B"
+                  : status === "vacant"
+                    ? "#94A3B8"
+                    : status === "expired"
+                      ? "#DC2626"
+                      : identity.stroke
+              }
+            >
+              {identity.short}
+            </text>
+          </g>
+        );
+      })
       : null;
 
   // Single-mode fill
@@ -468,8 +468,6 @@ export function SeatGrid({
     currentFloorSeats.forEach(([, seatInfo]) => {
       if (!seatInfo.active) return;
       physicalActiveSeats++;
-      console.log(physicalActiveSeats);
-      
 
       if (isAllMode) {
         activeShifts.forEach((k) => {
@@ -479,7 +477,7 @@ export function SeatGrid({
         if (seatInfo.shifts[selectedShift]) occupied++;
       }
     });
-    
+
     const total = isAllMode
       ? physicalActiveSeats * activeShifts.length
       : physicalActiveSeats;
@@ -583,7 +581,7 @@ export function SeatGrid({
                   isSelected && !isDisabled
                     ? "scale-110 z-10 drop-shadow-lg"
                     : !isDisabled &&
-                        "hover:-translate-y-0.5 hover:drop-shadow-md",
+                    "hover:-translate-y-0.5 hover:drop-shadow-md",
                 )}
               >
                 {/* Single mode expiry badge */}

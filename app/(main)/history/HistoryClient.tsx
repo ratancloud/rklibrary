@@ -346,7 +346,7 @@ export default function HistoryClient() {
         header: "Price",
         cell: (info) => {
           const total = info.getValue();
-          const lockerAmount = info.row.original.lockerAmount || 0; 
+          const lockerAmount = info.row.original.lockerAmount || 0;
           const discount = info.row.original.discount || 0;
           const finalAmount = total + lockerAmount - discount;
           return (
@@ -384,8 +384,8 @@ export default function HistoryClient() {
       columnHelper.accessor("amountPaid", {
         header: "Financials",
         cell: (info) => {
-          const paid = info.getValue();
-          const total = info.row.original.totalAmount;
+          const paid = info.getValue() + info.row.original.lockerAmount || 0;
+          const total = info.row.original.totalAmount + info.row.original.lockerAmount || 0;
           const discount = info.row.original.discount || 0;
           const finalAmount = total - discount;
           const due = finalAmount - paid;
@@ -721,9 +721,9 @@ export default function HistoryClient() {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                     </TableHead>
                   )),
                 )}

@@ -522,9 +522,10 @@ export default function StudentTable() {
                     new Date(),
                   );
                   const lockerAmount = latestSub.lockerAmount || 0;
-                  const finalAmount =
-                    latestSub.totalAmount + lockerAmount - (latestSub.discount || 0);
-                  const dues = finalAmount - latestSub.amountPaid;
+                  const amountPaid = latestSub.amountPaid + lockerAmount;
+                  const finalAmount = latestSub.totalAmount + (latestSub.lockerAmount || 0) - (latestSub.discount || 0);
+                  const dues = finalAmount - amountPaid;
+
                   const message = generateWhatsAppReceipt({
                     studentName: row.original.name,
                     memberId: row.original.memberId,
@@ -532,14 +533,14 @@ export default function StudentTable() {
                     dues,
                     totalAmount: latestSub.totalAmount,
                     discount: latestSub.discount || 0,
-                    amountPaid: latestSub.amountPaid,
+                    amountPaid,
                     startDateStr: latestSub.startDate,
                     endDateStr: latestSub.endDate,
                     floorName: latestSub.floorName,
                     seatNo: latestSub.seatNo,
                     shiftName: latestSub.shiftName,
                     lockerNumber: row.original.lockerNumber,
-                    lockerAmount: latestSub.lockerAmount,
+                    lockerAmount,
                   });
                   sendWhatsAppMessage(row.original.phoneNumber, message);
                 } else {

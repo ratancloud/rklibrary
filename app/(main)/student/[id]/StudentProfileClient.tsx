@@ -95,6 +95,7 @@ interface SubscriptionData {
   totalAmount: number;
   discount: number;
   amountPaid: number;
+  lockerNumber: number,
   lockerAmount?: number | null;
   status: "ACTIVE" | "EXPIRED" | "UPCOMING";
   floorName: string;
@@ -536,7 +537,7 @@ export default function StudentProfileClient() {
 
               {/* Right: Actions */}
               <div className="flex flex-wrap items-center sm:justify-end gap-2 shrink-0">
-                
+
                 {student.aadhaarFrontUrl && (
                   <Button
                     size="sm"
@@ -668,10 +669,10 @@ export default function StudentProfileClient() {
                     : null,
                   student.temporaryAddress
                     ? {
-                        label: "Temporary Address",
-                        value: student.temporaryAddress,
-                        mono: false,
-                      }
+                      label: "Temporary Address",
+                      value: student.temporaryAddress,
+                      mono: false,
+                    }
                     : null,
                 ]
                   .filter(Boolean)
@@ -1011,9 +1012,9 @@ function ActiveSubscriptionCard({
   onUpdateDues: () => void;
 }) {
   const router = useRouter();
-  const finalAmount =
-    sub.totalAmount + (sub.lockerAmount || 0) - (sub.discount || 0);
-  const dues = finalAmount - sub.amountPaid;
+  const amountPaid = sub.amountPaid + (sub.lockerAmount || 0);
+  const finalAmount = sub.totalAmount + (sub.lockerAmount || 0) - (sub.discount || 0);
+  const dues = finalAmount - amountPaid;
   const daysLeft = differenceInDays(new Date(sub.endDate), new Date());
   const progress = Math.round((sub.amountPaid / finalAmount) * 100);
 
@@ -1164,7 +1165,7 @@ function ActiveSubscriptionCard({
           {/* Progress Bar */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs font-semibold text-muted-foreground">
-              <span>₹{sub.amountPaid} paid</span>
+              <span>₹{amountPaid} paid</span>
               <span>{progress}%</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -1197,7 +1198,7 @@ function ActiveSubscriptionCard({
                 Paid
               </p>
               <p className="text-sm font-bold text-emerald-600">
-                ₹{sub.amountPaid}
+                ₹{amountPaid}
               </p>
             </div>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-center">
@@ -1244,19 +1245,25 @@ function ActiveSubscriptionCard({
             size="icon-lg"
             variant="outline"
             onClick={() => {
+              const lockerAmount = sub.lockerAmount || 0;
+              const amountPaid = sub.amountPaid + lockerAmount;
+              const finalAmount = sub.totalAmount + (sub.lockerAmount || 0) - (sub.discount || 0);
+              const dues = finalAmount - amountPaid;
               const message = generateWhatsAppReceipt({
                 studentName: student.name,
                 memberId: student.memberId,
-                floorName: sub.floorName,
-                seatNo: sub.seatNo,
                 daysLeft: daysLeft,
                 dues: dues,
                 totalAmount: sub.totalAmount,
                 discount: sub.discount || 0,
-                amountPaid: sub.amountPaid,
+                amountPaid,
                 startDateStr: sub.startDate,
                 endDateStr: sub.endDate,
+                floorName: sub.floorName,
+                seatNo: sub.seatNo,
                 shiftName: sub.shiftName,
+                lockerNumber: sub.lockerNumber,
+                lockerAmount,
               });
               sendWhatsAppMessage(student.phoneNumber, message);
             }}
