@@ -17,7 +17,7 @@ export default async function proxy(req: NextRequest) {
     "/booking",
     "/dashboard",
     "/history",
-    "expenses",
+    "/expenses",
     "/inquiry-request",
     "/profile",
     "/renew",
