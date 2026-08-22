@@ -14,7 +14,7 @@ import {
   Image as ImageIcon,
   type LucideIcon,
 } from "lucide-react";
-import { upload } from "@imagekit/javascript";
+import { upload } from "@imagekit/next";
 import {
   Select,
   SelectContent,
@@ -425,7 +425,7 @@ export default function StudentForm({
                       className={cn(
                         "transition-colors",
                         errors.name &&
-                          "border-destructive bg-red-50 dark:bg-red-950",
+                        "border-destructive bg-red-50 dark:bg-red-950",
                       )}
                       disabled={loading}
                     />
@@ -454,7 +454,7 @@ export default function StudentForm({
                         className={cn(
                           "transition-colors w-full",
                           errors.gender &&
-                            "border-destructive bg-red-50 dark:bg-red-950",
+                          "border-destructive bg-red-50 dark:bg-red-950",
                         )}
                       >
                         <SelectValue placeholder="Select gender" />
@@ -492,7 +492,7 @@ export default function StudentForm({
                       className={cn(
                         "transition-colors",
                         errors.phoneNumber &&
-                          "border-destructive bg-red-50 dark:bg-red-950",
+                        "border-destructive bg-red-50 dark:bg-red-950",
                       )}
                       disabled={loading}
                     />
@@ -526,7 +526,7 @@ export default function StudentForm({
                       className={cn(
                         "transition-colors",
                         errors.aadhaarNumber &&
-                          "border-destructive bg-red-50 dark:bg-red-950",
+                        "border-destructive bg-red-50 dark:bg-red-950",
                       )}
                       disabled={loading}
                     />
@@ -568,7 +568,7 @@ export default function StudentForm({
                       className={cn(
                         "transition-colors",
                         errors.fatherName &&
-                          "border-destructive bg-red-50 dark:bg-red-950",
+                        "border-destructive bg-red-50 dark:bg-red-950",
                       )}
                       disabled={loading}
                     />
@@ -599,7 +599,7 @@ export default function StudentForm({
                       className={cn(
                         "transition-colors",
                         errors.fatherPhone &&
-                          "border-destructive bg-red-50 dark:bg-red-950",
+                        "border-destructive bg-red-50 dark:bg-red-950",
                       )}
                       disabled={loading}
                     />
